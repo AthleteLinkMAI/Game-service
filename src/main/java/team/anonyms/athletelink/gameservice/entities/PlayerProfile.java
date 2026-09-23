@@ -2,12 +2,8 @@ package team.anonyms.athletelink.gameservice.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import jakarta.validation.constraints.NotNull;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -24,37 +20,7 @@ public class PlayerProfile {
     private UUID id;
 
     @NotNull(message = "User ID is required")
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private UUID userId;
 
-    @NotNull
-    @Builder.Default
-    private Integer totalPoints = 0;
-
-    @NotNull
-    @Builder.Default
-    private Integer rating = 1000;
-
-    @NotNull
-    @Builder.Default
-    private Integer gamesPlayed = 0;
-
-    @NotNull
-    @Builder.Default
-    private Integer wins = 0;
-
-    @NotNull
-    @Builder.Default
-    private Integer losses = 0;
-
-    @NotNull
-    @Builder.Default
-    private Integer draws = 0;
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private Instant createdAt;
-
-    @UpdateTimestamp
-    private Instant updatedAt;
 }

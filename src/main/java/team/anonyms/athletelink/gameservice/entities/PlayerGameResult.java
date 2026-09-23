@@ -24,16 +24,12 @@ public class PlayerGameResult {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "game_result_id")
+    @JoinColumn(name = "game_result_id", nullable = false)
     private GameResult gameResult;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "player_profile_id")
+    @JoinColumn(name = "player_profile_id", nullable = false)
     private PlayerProfile playerProfile;
-
-    @NotNull(message = "Score is required")
-    @Builder.Default
-    private Integer score = 0;
 
     @NotNull(message = "Game outcome is required")
     @Enumerated(EnumType.STRING)
@@ -44,7 +40,4 @@ public class PlayerGameResult {
     @Builder.Default
     private Integer ratingChange = 0;
 
-    @NotNull
-    @Builder.Default
-    private Integer pointsEarned = 0;
 }

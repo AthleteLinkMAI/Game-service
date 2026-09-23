@@ -10,5 +10,5 @@ public interface PlayerGameResultRepository extends JpaRepository<PlayerGameResu
 
     List<PlayerGameResult> findAllByGameResultId(UUID gameResultId);
 
-    List<PlayerGameResult> findAllByPlayerProfileIdOrderByGameResult_PlayedAtDesc(UUID playerProfileId);
+    List<PlayerGameResult> findAllByPlayerProfileIdOrderByGameResult_CreatedAtDesc(UUID playerProfileId);
 }

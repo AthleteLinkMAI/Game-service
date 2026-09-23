@@ -1,26 +1,29 @@
 package team.anonyms.athletelink.gameservice.services;
 
 import org.springframework.stereotype.Service;
-import team.anonyms.athletelink.gameservice.dto.LeaderboardEntryDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerProfileDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerSportStatsDto;
 import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
+import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
+import team.anonyms.athletelink.gameservice.entities.Sport;
+import team.anonyms.athletelink.gameservice.ranks.RankTiers;
 import team.anonyms.athletelink.gameservice.repositories.PlayerProfileRepository;
+import team.anonyms.athletelink.gameservice.repositories.PlayerSportStatsRepository;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Service class for managing player profiles, including retrieving profiles,
- * ensuring they exist (auto-creation), and computing leaderboard data.
- */
 @Service
 public class PlayerProfileService {
 
     private final PlayerProfileRepository playerProfileRepository;
+    private final PlayerSportStatsRepository playerSportStatsRepository;
 
-    public PlayerProfileService(PlayerProfileRepository playerProfileRepository) {
+    public PlayerProfileService(
+            PlayerProfileRepository playerProfileRepository,
+            PlayerSportStatsRepository playerSportStatsRepository
+    ) {
         this.playerProfileRepository = playerProfileRepository;
+        this.playerSportStatsRepository = playerSportStatsRepository;
     }
 
     /**
@@ -35,13 +38,10 @@ public class PlayerProfileService {
 
         return new PlayerProfileDto(
                 profile.getUserId(),
-                profile.getTotalPoints(),
-                profile.getRating(),
-                profile.getGamesPlayed(),
-                profile.getWins(),
-                profile.getLosses(),
-                profile.getDraws(),
-                profile.getCreatedAt()
+                playerSportStatsRepository.findAllByPlayerProfile_IdOrderBySport_Id(profile.getId())
+                        .stream()
+                        .map(this::toDto)
+                        .toList()
         );
     }
 
@@ -60,26 +60,39 @@ public class PlayerProfileService {
                             .userId(userId)
                             .build();
                     return playerProfileRepository.save(newProfile);
-                });
+        });
     }
 
-    /**
-     * Gets the leaderboard — top 50 players sorted by rating descending.
-     *
-     * @return A list of leaderboard entries with ranks.
-     */
-    public List<LeaderboardEntryDto> getLeaderboard() {
-        List<PlayerProfile> topPlayers = playerProfileRepository.findTop50ByOrderByRatingDesc();
+    public PlayerSportStats getOrCreateSportStats(PlayerProfile profile, Sport sport) {
+        return playerSportStatsRepository.findByPlayerProfile_IdAndSport_Id(profile.getId(), sport.getId())
+                .orElseGet(() -> playerSportStatsRepository.save(
+                        PlayerSportStats.builder()
+                                .playerProfile(profile)
+                                .sport(sport)
+                                .score(RankTiers.INITIAL_SCORE)
+                                .build()
+                ));
+    }
 
-        AtomicInteger rank = new AtomicInteger(1);
-        return topPlayers.stream()
-                .map(p -> new LeaderboardEntryDto(
-                        rank.getAndIncrement(),
-                        p.getUserId(),
-                        p.getRating(),
-                        p.getGamesPlayed(),
-                        p.getWins()
-                ))
-                .toList();
+    public PlayerSportStats saveSportStats(PlayerSportStats stats) {
+        return playerSportStatsRepository.save(stats);
+    }
+
+    private PlayerSportStatsDto toDto(PlayerSportStats stats) {
+        RankTiers.Tier rank = RankTiers.findByScore(stats.getScore());
+        return new PlayerSportStatsDto(
+                stats.getSport().getId(),
+                stats.getWins(),
+                stats.getLosses(),
+                stats.getDraws(),
+                stats.getScore(),
+                new PlayerSportStatsDto.RankDto(
+                        rank.id(),
+                        rank.name().name(),
+                        rank.tier(),
+                        rank.scoreMin(),
+                        rank.scoreMax()
+                )
+        );
     }
 }

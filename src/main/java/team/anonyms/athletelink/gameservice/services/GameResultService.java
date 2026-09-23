@@ -8,48 +8,41 @@ import team.anonyms.athletelink.gameservice.dto.SubmitGameResultDto;
 import team.anonyms.athletelink.gameservice.entities.GameResult;
 import team.anonyms.athletelink.gameservice.entities.PlayerGameResult;
 import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
+import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
+import team.anonyms.athletelink.gameservice.entities.Sport;
 import team.anonyms.athletelink.gameservice.enums.GameOutcome;
 import team.anonyms.athletelink.gameservice.enums.GameResultStatus;
 import team.anonyms.athletelink.gameservice.repositories.GameResultRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerGameResultRepository;
-import team.anonyms.athletelink.gameservice.repositories.PlayerProfileRepository;
+import team.anonyms.athletelink.gameservice.repositories.SportRepository;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Service class for managing game results, including submitting match results,
- * computing ELO ratings, awarding points, and retrieving game history.
- *
- * Rating system: simplified ELO with K-factor = 32, starting rating = 1000.
- * Points system: +25 for win, +10 for draw, +5 for loss (participation).
+ * computing per-sport rating changes and retrieving game history.
  */
 @Service
 public class GameResultService {
 
-    private static final int K_FACTOR = 32;
-    private static final int POINTS_WIN = 25;
-    private static final int POINTS_DRAW = 10;
-    private static final int POINTS_LOSS = 5;
-
     private final GameResultRepository gameResultRepository;
     private final PlayerGameResultRepository playerGameResultRepository;
-    private final PlayerProfileRepository playerProfileRepository;
     private final PlayerProfileService playerProfileService;
-    private final AchievementService achievementService;
+    private final SportRepository sportRepository;
 
     public GameResultService(
         GameResultRepository gameResultRepository,
         PlayerGameResultRepository playerGameResultRepository,
-        PlayerProfileRepository playerProfileRepository,
         PlayerProfileService playerProfileService,
-        AchievementService achievementService
+        SportRepository sportRepository
     ) {
         this.gameResultRepository = gameResultRepository;
         this.playerGameResultRepository = playerGameResultRepository;
-        this.playerProfileRepository = playerProfileRepository;
         this.playerProfileService = playerProfileService;
-        this.achievementService = achievementService;
+        this.sportRepository = sportRepository;
     }
 
     /**
@@ -58,18 +51,26 @@ public class GameResultService {
      * Business rules:
      * - A game result for the same activity request cannot be submitted twice.
      * - At least one player result must be provided.
-     * - Player profiles are auto-created if they don't exist yet.
-     * - ELO rating is computed based on average opponent rating.
-     * - Points are awarded based on outcome (win/draw/loss).
-     * - Achievements are checked and granted after stats update.
+     * - Player profiles and per-sport statistics are auto-created if necessary.
+     * - Rating changes are centralized in calculateRatingChange until the final
+     *   rating formula is approved.
+     * - Wins, losses and draws are updated in the selected sport.
      *
      * @param dto Data for the game result submission
-     * @param reporterId ID of the user submitting the result (from X-User-Id header)
+     * @param organizerId ID of the caller from the X-User-Id header; it is kept
+     *                    for the authorization boundary and is not persisted
      * @return The ID of the created game result
      * @throws IllegalArgumentException if a result for this activity request already exists
      */
     @Transactional
-    public UUID submitGameResult(SubmitGameResultDto dto, UUID reporterId) {
+    public UUID submitGameResult(SubmitGameResultDto dto, UUID organizerId) {
+
+        Set<UUID> playerIds = new HashSet<>();
+        for (SubmitGameResultDto.PlayerResultEntry player : dto.players()) {
+            if (!playerIds.add(player.userId())) {
+                throw new IllegalArgumentException("A player cannot appear twice in one game result");
+            }
+        }
 
         gameResultRepository.findByActivityRequestId(dto.activityRequestId())
                 .ifPresent(existing -> {
@@ -77,51 +78,58 @@ public class GameResultService {
                             "Game result for this activity request has already been submitted");
                 });
 
+        Sport sport = sportRepository.findById(dto.sportId())
+                .orElseThrow(() -> new IllegalArgumentException("Sport not found: " + dto.sportId()));
+
         GameResult gameResult = GameResult.builder()
                 .activityRequestId(dto.activityRequestId())
-                .sportId(dto.sportId())
+                .sport(sport)
                 .status(GameResultStatus.CONFIRMED)
-                .reportedBy(reporterId)
-                .playedAt(dto.playedAt())
                 .build();
 
         gameResultRepository.save(gameResult);
 
-        double averageRating = dto.players().stream()
-                .mapToInt(p -> playerProfileService.getOrCreateProfile(p.userId()).getRating())
-                .average()
-                .orElse(1000);
+        List<PlayerSportStats> sportStats = dto.players().stream()
+                .map(player -> playerProfileService.getOrCreateSportStats(
+                        playerProfileService.getOrCreateProfile(player.userId()),
+                        sport
+                ))
+                .toList();
 
-        for (SubmitGameResultDto.PlayerResultEntry entry : dto.players()) {
+        for (int index = 0; index < dto.players().size(); index++) {
+            SubmitGameResultDto.PlayerResultEntry entry = dto.players().get(index);
             PlayerProfile profile = playerProfileService.getOrCreateProfile(entry.userId());
+            PlayerSportStats stats = sportStats.get(index);
 
-            int ratingChange = calculateRatingChange(profile.getRating(), averageRating, entry.outcome());
-            int pointsEarned = calculatePoints(entry.outcome());
+            double opponentAverageScore = sportStats.stream()
+                    .filter(candidate -> candidate != stats)
+                    .mapToInt(PlayerSportStats::getScore)
+                    .average()
+                    .orElse(stats.getScore());
+            int ratingChange = calculateRatingChange(
+                    stats.getScore(),
+                    opponentAverageScore,
+                    entry.outcome()
+            );
 
             PlayerGameResult playerGameResult = PlayerGameResult.builder()
                     .gameResult(gameResult)
                     .playerProfile(profile)
-                    .score(entry.score())
                     .outcome(entry.outcome())
                     .ratingChange(ratingChange)
-                    .pointsEarned(pointsEarned)
                     .build();
 
             playerGameResultRepository.save(playerGameResult);
 
-            profile.setRating(Math.max(0, profile.getRating() + ratingChange));
-            profile.setTotalPoints(profile.getTotalPoints() + pointsEarned);
-            profile.setGamesPlayed(profile.getGamesPlayed() + 1);
+            stats.setScore(Math.max(0, stats.getScore() + ratingChange));
 
             switch (entry.outcome()) {
-                case WIN -> profile.setWins(profile.getWins() + 1);
-                case LOSS -> profile.setLosses(profile.getLosses() + 1);
-                case DRAW -> profile.setDraws(profile.getDraws() + 1);
+                case WIN -> stats.setWins(stats.getWins() + 1);
+                case LOSS -> stats.setLosses(stats.getLosses() + 1);
+                case DRAW -> stats.setDraws(stats.getDraws() + 1);
             }
 
-            playerProfileRepository.save(profile);
-
-            achievementService.checkAndGrantAchievements(profile);
+            playerProfileService.saveSportStats(stats);
         }
 
         return gameResult.getId();
@@ -143,20 +151,17 @@ public class GameResultService {
         List<GameResultDetailsDto.PlayerResultDto> playerDtos = playerResults.stream()
                 .map(pr -> new GameResultDetailsDto.PlayerResultDto(
                         pr.getPlayerProfile().getUserId(),
-                        pr.getScore(),
                         pr.getOutcome(),
-                        pr.getRatingChange(),
-                        pr.getPointsEarned()
+                        pr.getRatingChange()
                 ))
                 .toList();
 
         return new GameResultDetailsDto(
                 gameResult.getId(),
                 gameResult.getActivityRequestId(),
-                gameResult.getSportId(),
+                gameResult.getSport().getId(),
                 gameResult.getStatus(),
-                gameResult.getPlayedAt(),
-                gameResult.getReportedBy(),
+                gameResult.getCreatedAt(),
                 playerDtos
         );
     }
@@ -169,54 +174,29 @@ public class GameResultService {
      */
     public List<PlayerGameHistoryDto> getPlayerHistory(UUID playerProfileId) {
         return playerGameResultRepository
-                .findAllByPlayerProfileIdOrderByGameResult_PlayedAtDesc(playerProfileId)
+                .findAllByPlayerProfileIdOrderByGameResult_CreatedAtDesc(playerProfileId)
                 .stream()
                 .map(pgr -> new PlayerGameHistoryDto(
                         pgr.getGameResult().getId(),
-                        pgr.getGameResult().getSportId(),
-                        pgr.getScore(),
+                        pgr.getGameResult().getSport().getId(),
                         pgr.getOutcome(),
                         pgr.getRatingChange(),
-                        pgr.getPointsEarned(),
-                        pgr.getGameResult().getPlayedAt()
+                        pgr.getGameResult().getCreatedAt()
                 ))
                 .toList();
     }
 
     /**
-     * Calculates ELO rating change based on the simplified ELO formula.
+     * Placeholder for the approved per-sport rating formula.
      *
-     * Expected score: E = 1 / (1 + 10^((opponentRating - playerRating) / 400))
-     * Rating change: K * (actualScore - expectedScore)
-     *
-     * @param playerRating Current rating of the player
-     * @param opponentRating Average rating of opponents
+     * @param playerScore Current score of the player in this sport
+     * @param opponentAverageScore Average score of the other participants
      * @param outcome The match outcome (WIN/LOSS/DRAW)
      * @return The rating change (can be negative)
      */
-    private int calculateRatingChange(int playerRating, double opponentRating, GameOutcome outcome) {
-        double expectedScore = 1.0 / (1.0 + Math.pow(10, (opponentRating - playerRating) / 400.0));
-
-        double actualScore = switch (outcome) {
-            case WIN -> 1.0;
-            case DRAW -> 0.5;
-            case LOSS -> 0.0;
-        };
-
-        return (int) Math.round(K_FACTOR * (actualScore - expectedScore));
-    }
-
-    /**
-     * Calculates points earned based on match outcome.
-     *
-     * @param outcome The match outcome
-     * @return Points earned: 25 for win, 10 for draw, 5 for loss
-     */
-    private int calculatePoints(GameOutcome outcome) {
-        return switch (outcome) {
-            case WIN -> POINTS_WIN;
-            case DRAW -> POINTS_DRAW;
-            case LOSS -> POINTS_LOSS;
-        };
+    private int calculateRatingChange(int playerScore, double opponentAverageScore, GameOutcome outcome) {
+        // TODO: replace with the approved rating formula. DRAW remains a valid
+        // outcome and must be handled by the final formula.
+        return 0;
     }
 }

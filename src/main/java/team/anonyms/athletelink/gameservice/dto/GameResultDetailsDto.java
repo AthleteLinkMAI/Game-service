@@ -23,11 +23,8 @@ public record GameResultDetailsDto(
         @Schema(description = "Current status of the game result")
         GameResultStatus status,
 
-        @Schema(description = "When the match was played", example = "2026-09-04T18:00:00Z")
-        Instant playedAt,
-
-        @Schema(description = "ID of the user who reported the result")
-        UUID reportedBy,
+        @Schema(description = "When the result was processed", example = "2026-09-04T18:00:00Z")
+        Instant createdAt,
 
         @Schema(description = "Individual player results")
         List<PlayerResultDto> players
@@ -39,16 +36,10 @@ public record GameResultDetailsDto(
             @Schema(description = "User ID", example = "123e4567-e89b-12d3-a456-426614174000")
             UUID userId,
 
-            @Schema(description = "Score in the match", example = "3")
-            Integer score,
-
             @Schema(description = "Match outcome for this player")
             GameOutcome outcome,
 
             @Schema(description = "Rating change after this match", example = "+15")
-            Integer ratingChange,
-
-            @Schema(description = "Points earned for this match", example = "25")
-            Integer pointsEarned
+            Integer ratingChange
     ) {}
 }

@@ -28,21 +28,17 @@ public class GameResult {
     @NotNull(message = "Activity request ID is required")
     private UUID activityRequestId;
 
-    @NotNull(message = "Sport ID is required")
-    private Long sportId;
+    @NotNull(message = "Sport is required")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "sport_id", nullable = false)
+    private Sport sport;
 
     @NotNull(message = "Game result status is required")
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private GameResultStatus status;
 
-    @NotNull(message = "Reporter ID is required")
-    private UUID reportedBy;
-
-    @NotNull(message = "Played at date is required")
-    private Instant playedAt;
-
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 }

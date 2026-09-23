@@ -36,7 +36,7 @@ public class GameResultController {
     @PostMapping
     @Operation(
         summary = "Submit game result",
-        description = "Submits the result of a completed match. Automatically calculates ELO rating changes, awards points, and checks achievements for all participants."
+        description = "Submits the result of a completed match and updates each participant's statistics for the selected sport."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Game result submitted successfully"),
@@ -58,7 +58,7 @@ public class GameResultController {
     @GetMapping("/{id}")
     @Operation(
         summary = "Get game result details",
-        description = "Retrieves detailed information about a specific game result, including individual player scores, outcomes, and rating changes."
+        description = "Retrieves detailed information about a specific game result, including individual player outcomes and rating changes."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Game result details retrieved successfully"),
