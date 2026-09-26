@@ -1,84 +1,94 @@
 package team.anonyms.athletelink.gameservice.controllers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import team.anonyms.athletelink.gameservice.dto.PlayerGameHistoryDto;
-import team.anonyms.athletelink.gameservice.dto.PlayerProfileDto;
-import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
-import team.anonyms.athletelink.gameservice.repositories.PlayerProfileRepository;
-import team.anonyms.athletelink.gameservice.services.GameResultService;
-import team.anonyms.athletelink.gameservice.services.PlayerProfileService;
-
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerGameHistoryDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerSportDetailsDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerSummaryDto;
+import team.anonyms.athletelink.gameservice.services.GameResultService;
+import team.anonyms.athletelink.gameservice.services.PlayerProfileService;
 
 import java.util.UUID;
-import java.util.List;
 
 @RestController
+@RequestMapping("/api/v1/players")
 @Tag(name = "Player profiles", description = "API for viewing player profiles and match history")
 public class PlayerProfileController {
 
-    private static final Logger logger = LoggerFactory.getLogger(PlayerProfileController.class);
-
     private final PlayerProfileService playerProfileService;
     private final GameResultService gameResultService;
-    private final PlayerProfileRepository playerProfileRepository;
 
     public PlayerProfileController(
-        PlayerProfileService playerProfileService,
-        GameResultService gameResultService,
-        PlayerProfileRepository playerProfileRepository
+            PlayerProfileService playerProfileService,
+            GameResultService gameResultService
     ) {
         this.playerProfileService = playerProfileService;
         this.gameResultService = gameResultService;
-        this.playerProfileRepository = playerProfileRepository;
     }
 
-    @GetMapping("/profiles/{userId}")
-    @Operation(
-        summary = "Get player profile",
-        description = "Retrieves a player's statistics grouped by sport."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Player profile retrieved successfully"),
+    @GetMapping("/{userId}")
+    @Operation(summary = "Get player summary")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Summary retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "Player profile not found")
     })
-    public ResponseEntity<PlayerProfileDto> getProfile(
-            @Parameter(description = "User UUID", example = "123e4567-e89b-12d3-a456-426614174000")
+    public ResponseEntity<PlayerSummaryDto> getSummary(
             @PathVariable("userId") UUID userId
     ) {
-        logger.info("Fetching profile for user {}", userId);
-        PlayerProfileDto profile = playerProfileService.getProfile(userId);
-        return ResponseEntity.ok(profile);
+        return ResponseEntity.ok(
+                playerProfileService.getSummary(userId)
+        );
     }
 
-    @GetMapping("/profiles/{userId}/history")
-    @Operation(
-        summary = "Get match history",
-        description = "Retrieves a player's match history sorted by most recent first, including outcomes and rating changes."
-    )
-    @ApiResponses(value = {
+
+
+    @GetMapping("/{userId}/sports/{sportId}")
+    @Operation(summary = "Get player statistics for one sport")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Sport statistics retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Player, sport or statistics not found")
+    })
+    public ResponseEntity<PlayerSportDetailsDto> getSportDetails(
+            @PathVariable("userId") UUID userId,
+            @PathVariable("sportId") Long sportId
+    ) {
+        return ResponseEntity.ok(
+                playerProfileService.getSportDetails(
+                        userId,
+                        sportId
+                )
+        );
+    }
+
+    @GetMapping("/{userId}/matches")
+    @Operation(summary = "Get paginated player match history")
+    @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Match history retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Player profile not found")
+            @ApiResponse(responseCode = "400", description = "Invalid cursor or limit"),
+            @ApiResponse(responseCode = "404", description = "Player profile or sport not found")
     })
-    public ResponseEntity<List<PlayerGameHistoryDto>> getPlayerHistory(
-            @Parameter(description = "User UUID", example = "123e4567-e89b-12d3-a456-426614174000")
-            @PathVariable("userId") UUID userId
+    public ResponseEntity<CursorPageDto<PlayerGameHistoryDto>> getMatches(
+            @PathVariable("userId") UUID userId,
+            @RequestParam(name = "sportId", required = false) Long sportId,
+            @RequestParam(name = "cursor", required = false) String cursor,
+            @RequestParam(name = "limit", defaultValue = "20") int limit
     ) {
-        logger.info("Fetching match history for user {}", userId);
-
-        PlayerProfile profile = playerProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Player profile not found"));
-
-        List<PlayerGameHistoryDto> history = gameResultService.getPlayerHistory(profile.getId());
-        return ResponseEntity.ok(history);
+        return ResponseEntity.ok(
+                gameResultService.getPlayerMatches(
+                        userId,
+                        sportId,
+                        cursor,
+                        limit
+                )
+        );
     }
-
 }

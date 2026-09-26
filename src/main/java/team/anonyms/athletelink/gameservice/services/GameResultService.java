@@ -2,6 +2,7 @@ package team.anonyms.athletelink.gameservice.services;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
 import team.anonyms.athletelink.gameservice.dto.GameResultDetailsDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerGameHistoryDto;
 import team.anonyms.athletelink.gameservice.dto.SubmitGameResultDto;
@@ -12,12 +13,19 @@ import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
 import team.anonyms.athletelink.gameservice.entities.Sport;
 import team.anonyms.athletelink.gameservice.enums.GameOutcome;
 import team.anonyms.athletelink.gameservice.enums.GameResultStatus;
+import team.anonyms.athletelink.gameservice.exceptions.ConflictException;
+import team.anonyms.athletelink.gameservice.exceptions.InvalidCursorException;
+import team.anonyms.athletelink.gameservice.exceptions.ResourceNotFoundException;
+import team.anonyms.athletelink.gameservice.pagination.CursorService;
+import team.anonyms.athletelink.gameservice.pagination.MatchHistoryCursor;
 import team.anonyms.athletelink.gameservice.repositories.GameResultRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerGameResultRepository;
+import team.anonyms.athletelink.gameservice.repositories.PlayerHistoryRowProjection;
 import team.anonyms.athletelink.gameservice.repositories.SportRepository;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,17 +40,23 @@ public class GameResultService {
     private final PlayerGameResultRepository playerGameResultRepository;
     private final PlayerProfileService playerProfileService;
     private final SportRepository sportRepository;
+    private final CursorService cursorService;
+
+    private static final String HISTORY_CURSOR_TYPE = "match-history";
+    private static final int MAX_PAGE_SIZE = 100;
 
     public GameResultService(
         GameResultRepository gameResultRepository,
         PlayerGameResultRepository playerGameResultRepository,
         PlayerProfileService playerProfileService,
-        SportRepository sportRepository
+        SportRepository sportRepository,
+        CursorService cursorService
     ) {
         this.gameResultRepository = gameResultRepository;
         this.playerGameResultRepository = playerGameResultRepository;
         this.playerProfileService = playerProfileService;
         this.sportRepository = sportRepository;
+        this.cursorService = cursorService;
     }
 
     /**
@@ -57,13 +71,16 @@ public class GameResultService {
      * - Wins, losses and draws are updated in the selected sport.
      *
      * @param dto Data for the game result submission
-     * @param organizerId ID of the caller from the X-User-Id header; it is kept
-     *                    for the authorization boundary and is not persisted
      * @return The ID of the created game result
-     * @throws IllegalArgumentException if a result for this activity request already exists
-     */
+     * @throws team.anonyms.athletelink.gameservice.exceptions.ConflictException
+     *         if a result for this activity request already exists
+    */
     @Transactional
-    public UUID submitGameResult(SubmitGameResultDto dto, UUID organizerId) {
+    public UUID submitGameResult(SubmitGameResultDto dto) {
+
+        if (dto == null || dto.players() == null || dto.players().isEmpty()) {
+            throw new IllegalArgumentException("At least one player result is required");
+        }
 
         Set<UUID> playerIds = new HashSet<>();
         for (SubmitGameResultDto.PlayerResultEntry player : dto.players()) {
@@ -74,12 +91,23 @@ public class GameResultService {
 
         gameResultRepository.findByActivityRequestId(dto.activityRequestId())
                 .ifPresent(existing -> {
-                    throw new IllegalArgumentException(
+                    throw new ConflictException(
                             "Game result for this activity request has already been submitted");
                 });
 
         Sport sport = sportRepository.findById(dto.sportId())
-                .orElseThrow(() -> new IllegalArgumentException("Sport not found: " + dto.sportId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Sport not found: " + dto.sportId()));
+
+        if (dto.players().size() < sport.getMinPlayers()
+                || dto.players().size() > sport.getMaxPlayers()) {
+            throw new IllegalArgumentException(
+                    "Player count must be between "
+                            + sport.getMinPlayers()
+                            + " and "
+                            + sport.getMaxPlayers()
+            );
+        }
 
         GameResult gameResult = GameResult.builder()
                 .activityRequestId(dto.activityRequestId())
@@ -136,17 +164,20 @@ public class GameResultService {
     }
 
     /**
-     * Gets the details of a specific game result, including all individual player results.
-     *
-     * @param gameResultId ID of the game result
-     * @throws IllegalArgumentException if the game result is not found.
+     * Finds the result by the activity request that produced the game.
      */
-    public GameResultDetailsDto getGameResultDetails(UUID gameResultId) {
-        GameResult gameResult = gameResultRepository.findById(gameResultId)
-                .orElseThrow(() -> new IllegalArgumentException("Game result not found"));
+    @Transactional(readOnly = true)
+    public GameResultDetailsDto getGameResultByActivityRequestId(UUID activityRequestId) {
+        GameResult gameResult = gameResultRepository.findByActivityRequestId(activityRequestId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Game result not found for activity request: " + activityRequestId));
 
+        return toDetailsDto(gameResult);
+    }
+
+    private GameResultDetailsDto toDetailsDto(GameResult gameResult) {
         List<PlayerGameResult> playerResults = playerGameResultRepository
-                .findAllByGameResultId(gameResultId);
+                .findAllByGameResultId(gameResult.getId());
 
         List<GameResultDetailsDto.PlayerResultDto> playerDtos = playerResults.stream()
                 .map(pr -> new GameResultDetailsDto.PlayerResultDto(
@@ -167,23 +198,132 @@ public class GameResultService {
     }
 
     /**
-     * Gets the match history for a specific player, sorted by most recent first.
-     *
-     * @param playerProfileId ID of the player profile
-     * @return A list of game history entries
+     * Public read operation for the future /players/{userId}/matches endpoint.
+     * The controller passes a user ID; profile-ID resolution stays in services.
      */
-    public List<PlayerGameHistoryDto> getPlayerHistory(UUID playerProfileId) {
-        return playerGameResultRepository
-                .findAllByPlayerProfileIdOrderByGameResult_CreatedAtDesc(playerProfileId)
-                .stream()
-                .map(pgr -> new PlayerGameHistoryDto(
-                        pgr.getGameResult().getId(),
-                        pgr.getGameResult().getSport().getId(),
-                        pgr.getOutcome(),
-                        pgr.getRatingChange(),
-                        pgr.getGameResult().getCreatedAt()
-                ))
+    @Transactional(readOnly = true)
+    public CursorPageDto<PlayerGameHistoryDto> getPlayerMatches(
+            UUID userId,
+            Long sportId,
+            String cursor,
+            int limit
+    ) {
+        UUID profileId = playerProfileService.getProfileId(userId);
+        return getPlayerHistory(profileId, sportId, cursor, limit);
+    }
+
+    /**
+     * Returns a cursor-paginated history for an existing player profile.
+     * The profile ID is used here because it is the foreign key stored in
+     * player_game_results. External callers should use getPlayerMatches,
+     * which resolves a user ID to the local profile ID.
+     *
+     * @param playerProfileId player_profiles.id
+     * @param sportId optional sport filter
+     * @param cursor opaque cursor from the previous response, or {@code null}
+     * @param limit requested page size
+     */
+    @Transactional(readOnly = true)
+    public CursorPageDto<PlayerGameHistoryDto> getPlayerHistory(
+            UUID playerProfileId,
+            Long sportId,
+            String cursor,
+            int limit
+    ) {
+        validateLimit(limit);
+
+        if (sportId != null) {
+            sportRepository.findById(sportId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Sport not found: " + sportId));
+        }
+
+        MatchHistoryCursor decodedCursor = decodeHistoryCursor(
+                cursor,
+                playerProfileId,
+                sportId
+        );
+
+        List<PlayerHistoryRowProjection> rows = playerGameResultRepository.findHistory(
+                playerProfileId,
+                sportId,
+                decodedCursor == null ? null : decodedCursor.createdAt(),
+                decodedCursor == null ? null : decodedCursor.gameResultId(),
+                limit + 1
+        );
+
+        boolean hasNext = rows.size() > limit;
+        List<PlayerHistoryRowProjection> pageRows = hasNext
+                ? rows.subList(0, limit)
+                : rows;
+
+        List<PlayerGameHistoryDto> items = pageRows.stream()
+                .map(this::toHistoryDto)
                 .toList();
+
+        String nextCursor = hasNext
+                ? encodeNextHistoryCursor(
+                        pageRows.get(pageRows.size() - 1),
+                        playerProfileId,
+                        sportId
+                )
+                : null;
+
+        return new CursorPageDto<>(items, nextCursor, hasNext);
+    }
+
+    private MatchHistoryCursor decodeHistoryCursor(
+            String cursor,
+            UUID playerProfileId,
+            Long sportId
+    ) {
+        if (cursor == null || cursor.isBlank()) {
+            return null;
+        }
+
+        MatchHistoryCursor decoded = cursorService.decode(
+                cursor,
+                MatchHistoryCursor.class
+        );
+        if (!HISTORY_CURSOR_TYPE.equals(decoded.type())
+                || !playerProfileId.equals(decoded.playerProfileId())
+                || !Objects.equals(sportId, decoded.sportId())
+                || decoded.createdAt() == null
+                || decoded.gameResultId() == null) {
+            throw new InvalidCursorException("Cursor does not belong to match history");
+        }
+        return decoded;
+    }
+
+    private PlayerGameHistoryDto toHistoryDto(PlayerHistoryRowProjection row) {
+        return new PlayerGameHistoryDto(
+                row.getGameResultId(),
+                row.getSportId(),
+                GameOutcome.valueOf(row.getOutcome()),
+                row.getRatingChange(),
+                row.getCreatedAt()
+        );
+    }
+
+    private String encodeNextHistoryCursor(
+            PlayerHistoryRowProjection lastRow,
+            UUID playerProfileId,
+            Long sportId
+    ) {
+        return cursorService.encode(new MatchHistoryCursor(
+                HISTORY_CURSOR_TYPE,
+                playerProfileId,
+                sportId,
+                lastRow.getCreatedAt(),
+                lastRow.getGameResultId()
+        ));
+    }
+
+    private void validateLimit(int limit) {
+        if (limit < 1 || limit > MAX_PAGE_SIZE) {
+            throw new IllegalArgumentException(
+                    "Limit must be between 1 and " + MAX_PAGE_SIZE);
+        }
     }
 
     /**
