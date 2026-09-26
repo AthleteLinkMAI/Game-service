@@ -2,7 +2,6 @@ package team.anonyms.athletelink.gameservice.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.util.UUID;
 
 @Schema(description = "Player statistics for one sport")
 public record PlayerSportStatsDto(
@@ -27,7 +26,6 @@ public record PlayerSportStatsDto(
 ) {
 
     public record RankDto(
-            UUID id,
             String name,
             Integer tier,
             Integer scoreMin,

@@ -20,7 +20,6 @@ public class PlayerProfile {
     private UUID id;
 
     @NotNull(message = "User ID is required")
-    @Column(unique = true, nullable = false)
     private UUID userId;
 
 }

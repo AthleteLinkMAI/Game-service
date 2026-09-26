@@ -26,31 +26,25 @@ public class PlayerSportStats {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "player_profile_id", nullable = false)
     private PlayerProfile playerProfile;
 
     @NotNull(message = "Sport is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sport_id", nullable = false)
     private Sport sport;
 
     @NotNull
     @Builder.Default
-    @Column(nullable = false)
     private Integer wins = 0;
 
     @NotNull
     @Builder.Default
-    @Column(nullable = false)
     private Integer losses = 0;
 
     @NotNull
     @Builder.Default
-    @Column(nullable = false)
     private Integer draws = 0;
 
     @NotNull
     @Builder.Default
-    @Column(nullable = false)
     private Integer score = 0;
 }

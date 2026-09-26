@@ -1,7 +1,6 @@
 package team.anonyms.athletelink.gameservice.ranks;
 
 import java.util.List;
-import java.util.UUID;
 
 public final class RankTiers {
 
@@ -16,7 +15,6 @@ public final class RankTiers {
     }
 
     public record Tier(
-            UUID id,
             Name name,
             int tier,
             int scoreMin,
@@ -35,13 +33,13 @@ public final class RankTiers {
     public static final int INITIAL_SCORE = 0;
 
     public static final List<Tier> VALUES = List.of(
-            new Tier(UUID.fromString("00000000-0000-0000-0000-000000000001"), Name.BRONZE, 1, 0, 999),
-            new Tier(UUID.fromString("00000000-0000-0000-0000-000000000002"), Name.SILVER, 1, 1000, 1199),
-            new Tier(UUID.fromString("00000000-0000-0000-0000-000000000003"), Name.GOLD, 1, 1200, 1399),
-            new Tier(UUID.fromString("00000000-0000-0000-0000-000000000004"), Name.DIAMOND, 1, 1400, 1599),
-            new Tier(UUID.fromString("00000000-0000-0000-0000-000000000005"), Name.MYTHIC, 1, 1600, 1799),
-            new Tier(UUID.fromString("00000000-0000-0000-0000-000000000006"), Name.LEGEND, 1, 1800, 1999),
-            new Tier(UUID.fromString("00000000-0000-0000-0000-000000000007"), Name.MASTER, 1, 2000, Integer.MAX_VALUE)
+            new Tier(Name.BRONZE, 1, 0, 999),
+            new Tier(Name.SILVER, 1, 1000, 1199),
+            new Tier(Name.GOLD, 1, 1200, 1399),
+            new Tier(Name.DIAMOND, 1, 1400, 1599),
+            new Tier(Name.MYTHIC, 1, 1600, 1799),
+            new Tier(Name.LEGEND, 1, 1800, 1999),
+            new Tier(Name.MASTER, 1, 2000, Integer.MAX_VALUE)
     );
 
     private RankTiers() {

@@ -30,7 +30,6 @@ public class GameResult {
 
     @NotNull(message = "Sport is required")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sport_id", nullable = false)
     private Sport sport;
 
     @NotNull(message = "Game result status is required")
@@ -39,6 +38,6 @@ public class GameResult {
     private GameResultStatus status;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private Instant createdAt;
 }

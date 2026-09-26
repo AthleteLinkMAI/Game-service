@@ -37,8 +37,7 @@ CREATE TABLE player_game_results (
     player_profile_id UUID NOT NULL REFERENCES player_profiles(id),
     outcome game_outcome NOT NULL,
     rating_change INT NOT NULL DEFAULT 0,
-    CONSTRAINT uq_player_game_results_game_profile
-        UNIQUE (game_result_id, player_profile_id)
+    CONSTRAINT uq_player_game_results_game_profile UNIQUE (game_result_id, player_profile_id)
 );
 
 CREATE TABLE player_sport_stats (

@@ -24,11 +24,9 @@ public class PlayerGameResult {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "game_result_id", nullable = false)
     private GameResult gameResult;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "player_profile_id", nullable = false)
     private PlayerProfile playerProfile;
 
     @NotNull(message = "Game outcome is required")

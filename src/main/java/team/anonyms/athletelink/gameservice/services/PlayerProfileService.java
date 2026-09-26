@@ -87,7 +87,6 @@ public class PlayerProfileService {
                 stats.getDraws(),
                 stats.getScore(),
                 new PlayerSportStatsDto.RankDto(
-                        rank.id(),
                         rank.name().name(),
                         rank.tier(),
                         rank.scoreMin(),
