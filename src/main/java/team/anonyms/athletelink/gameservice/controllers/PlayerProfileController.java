@@ -20,7 +20,7 @@ import team.anonyms.athletelink.gameservice.services.PlayerProfileService;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/players")
+@RequestMapping("/players")
 @Tag(name = "Player profiles", description = "API for viewing player profiles and match history")
 public class PlayerProfileController {
 

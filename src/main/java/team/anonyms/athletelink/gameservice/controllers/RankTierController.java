@@ -14,7 +14,7 @@ import team.anonyms.athletelink.gameservice.ranks.RankTiers;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/rank-tiers")
+@RequestMapping("/rank-tiers")
 @Tag(name = "Rank tiers")
 public class RankTierController {
 
