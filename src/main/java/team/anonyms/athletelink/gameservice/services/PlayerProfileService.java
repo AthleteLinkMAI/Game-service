@@ -134,6 +134,8 @@ public class PlayerProfileService {
      * @param userId ID of the user
      * @return The existing or newly created player profile entity
      */
+
+    // TODO: connect through Kafka
     public PlayerProfile getOrCreateProfile(UUID userId) {
         return playerProfileRepository.findByUserId(userId)
                 .orElseGet(() -> {
@@ -144,6 +146,7 @@ public class PlayerProfileService {
         });
     }
 
+    // TODO: connect through Kafka
     public PlayerSportStats getOrCreateSportStats(PlayerProfile profile, Sport sport) {
         return playerSportStatsRepository.findByPlayerProfile_IdAndSport_Id(profile.getId(), sport.getId())
                 .orElseGet(() -> playerSportStatsRepository.save(
@@ -155,6 +158,7 @@ public class PlayerProfileService {
                 ));
     }
 
+    // TODO: connect through Kafka
     public PlayerSportStats saveSportStats(PlayerSportStats stats) {
         return playerSportStatsRepository.save(stats);
     }
