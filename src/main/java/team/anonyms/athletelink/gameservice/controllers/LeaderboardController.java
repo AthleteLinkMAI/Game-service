@@ -15,7 +15,7 @@ import team.anonyms.athletelink.gameservice.dto.LeaderboardEntryDto;
 import team.anonyms.athletelink.gameservice.services.LeaderboardService;
 
 @RestController
-@RequestMapping("/api/v1/leaderboards")
+@RequestMapping("/leaderboards")
 @Tag(name = "Leaderboards")
 public class LeaderboardController {
 

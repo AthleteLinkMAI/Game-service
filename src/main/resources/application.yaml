@@ -1,6 +1,9 @@
 spring:
   application:
     name: game-service
+  mvc:
+    servlet:
+      path: /api/v1
   
   datasource:
     url: jdbc:postgresql://localhost:5432/game_db

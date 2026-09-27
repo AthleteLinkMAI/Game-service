@@ -15,7 +15,7 @@ import team.anonyms.athletelink.gameservice.services.GameResultService;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/results")
+@RequestMapping("/results")
 @Tag(name = "Results")
 public class GameResultQueryController {
 
