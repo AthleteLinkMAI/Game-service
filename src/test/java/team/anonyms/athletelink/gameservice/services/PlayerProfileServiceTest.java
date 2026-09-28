@@ -98,7 +98,7 @@ class PlayerProfileServiceTest {
         when(sportRepository.findById(1L))
                 .thenReturn(Optional.of(football));
         when(playerSportStatsRepository
-                .findByPlayerProfile_IdAndSport_Id(profileId, 1L))
+                .findByPlayerProfileIdAndSportId(profileId, 1L))
                 .thenReturn(Optional.of(stats));
         when(playerSportStatsRepository.countPlayersAhead(1L, 1200))
                 .thenReturn(6L);

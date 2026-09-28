@@ -1,5 +1,6 @@
 package team.anonyms.athletelink.gameservice.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.anonyms.athletelink.gameservice.dto.PlayerSportDetailsDto;
@@ -83,7 +84,7 @@ public class PlayerProfileService {
 
         PlayerSportStats stats =
                 playerSportStatsRepository
-                        .findByPlayerProfile_IdAndSport_Id(
+                        .findByPlayerProfileIdAndSportId(
                                 profile.getId(),
                                 sportId
                         )
@@ -126,6 +127,7 @@ public class PlayerProfileService {
                 rank
         );
     }
+
     /**
      * Retrieves or creates a player profile for the given user ID.
      * Used internally when processing game results — if the player doesn't have
@@ -134,8 +136,7 @@ public class PlayerProfileService {
      * @param userId ID of the user
      * @return The existing or newly created player profile entity
      */
-
-    // TODO: connect through Kafka
+    @Deprecated(forRemoval = true)
     public PlayerProfile getOrCreateProfile(UUID userId) {
         return playerProfileRepository.findByUserId(userId)
                 .orElseGet(() -> {
@@ -146,9 +147,19 @@ public class PlayerProfileService {
         });
     }
 
+    public PlayerProfile getProfile(UUID userId) {
+        return playerProfileRepository.findByUserId(userId).orElseThrow(
+                () -> new EntityNotFoundException("User was not found by ID=" + userId)
+        );
+    }
+
+    public PlayerProfile createProfile(UUID userId) {
+        return playerProfileRepository.save(PlayerProfile.builder().userId(userId).build());
+    }
+
     // TODO: connect through Kafka
     public PlayerSportStats getOrCreateSportStats(PlayerProfile profile, Sport sport) {
-        return playerSportStatsRepository.findByPlayerProfile_IdAndSport_Id(profile.getId(), sport.getId())
+        return playerSportStatsRepository.findByPlayerProfileIdAndSportId(profile.getId(), sport.getId())
                 .orElseGet(() -> playerSportStatsRepository.save(
                         PlayerSportStats.builder()
                                 .playerProfile(profile)
@@ -173,6 +184,10 @@ public class PlayerProfileService {
                 .map(PlayerProfile::getId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Player profile not found"));
+    }
+
+    public void deleteProfile(UUID userId) {
+        playerProfileRepository.deleteByUserId(userId);
     }
 
 }

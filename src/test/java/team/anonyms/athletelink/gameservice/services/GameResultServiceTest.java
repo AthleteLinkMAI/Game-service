@@ -330,7 +330,7 @@ class GameResultServiceTest {
     }
 
     private void stubPlayer(PlayerProfile profile, PlayerSportStats stats, Sport sport) {
-        when(playerProfileService.getOrCreateProfile(profile.getUserId())).thenReturn(profile);
+        when(playerProfileService.createProfile(profile.getUserId())).thenReturn(profile);
         when(playerProfileService.getOrCreateSportStats(profile, sport)).thenReturn(stats);
         when(playerProfileService.saveSportStats(stats)).thenReturn(stats);
     }

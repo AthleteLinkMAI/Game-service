@@ -117,16 +117,16 @@ public class GameResultService {
 
         gameResultRepository.save(gameResult);
 
-        List<PlayerSportStats> sportStats = dto.players().stream()
-                .map(player -> playerProfileService.getOrCreateSportStats(
-                        playerProfileService.getOrCreateProfile(player.userId()),
+        List<PlayerSportStats> sportStats = dto.players().stream().map(
+                player -> playerProfileService.getOrCreateSportStats(
+                        playerProfileService.getProfile(player.userId()),
                         sport
-                ))
-                .toList();
+                )
+        ).toList();
 
         for (int index = 0; index < dto.players().size(); index++) {
             SubmitGameResultDto.PlayerResultEntry entry = dto.players().get(index);
-            PlayerProfile profile = playerProfileService.getOrCreateProfile(entry.userId());
+            PlayerProfile profile = playerProfileService.getProfile(entry.userId());
             PlayerSportStats stats = sportStats.get(index);
 
             double opponentAverageScore = sportStats.stream()

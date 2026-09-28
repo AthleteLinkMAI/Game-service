@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface PlayerSportStatsRepository
         extends JpaRepository<PlayerSportStats, UUID> {
 
-    Optional<PlayerSportStats> findByPlayerProfile_IdAndSport_Id(
+    Optional<PlayerSportStats> findByPlayerProfileIdAndSportId(
             UUID playerProfileId,
             Long sportId
     );

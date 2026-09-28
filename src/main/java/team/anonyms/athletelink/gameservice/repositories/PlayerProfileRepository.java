@@ -10,4 +10,5 @@ public interface PlayerProfileRepository extends JpaRepository<PlayerProfile, UU
 
     Optional<PlayerProfile> findByUserId(UUID userId);
 
+    void deleteByUserId(UUID userId);
 }
