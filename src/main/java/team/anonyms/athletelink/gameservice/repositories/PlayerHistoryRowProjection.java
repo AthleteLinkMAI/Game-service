@@ -5,7 +5,11 @@ import java.util.UUID;
 
 public interface PlayerHistoryRowProjection {
 
-    UUID getGameResultId();
+    UUID getRoundResultId();
+
+    UUID getActivityRequestId();
+
+    Integer getRoundNumber();
 
     Long getSportId();
 

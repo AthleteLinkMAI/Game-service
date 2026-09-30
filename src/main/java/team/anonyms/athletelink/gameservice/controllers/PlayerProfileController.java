@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
-import team.anonyms.athletelink.gameservice.dto.PlayerGameHistoryDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerSportDetailsDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerSummaryDto;
-import team.anonyms.athletelink.gameservice.services.GameResultService;
+import team.anonyms.athletelink.gameservice.services.RoundResultService;
 import team.anonyms.athletelink.gameservice.services.PlayerProfileService;
 
 import java.util.UUID;
@@ -25,14 +25,14 @@ import java.util.UUID;
 public class PlayerProfileController {
 
     private final PlayerProfileService playerProfileService;
-    private final GameResultService gameResultService;
+    private final RoundResultService roundResultService;
 
     public PlayerProfileController(
             PlayerProfileService playerProfileService,
-            GameResultService gameResultService
+            RoundResultService roundResultService
     ) {
         this.playerProfileService = playerProfileService;
-        this.gameResultService = gameResultService;
+        this.roundResultService = roundResultService;
     }
 
     @GetMapping("/{userId}")
@@ -55,7 +55,7 @@ public class PlayerProfileController {
     @Operation(summary = "Get player statistics for one sport")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Sport statistics retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Player, sport or statistics not found")
+            @ApiResponse(responseCode = "404", description = "Player or sport statistics not found")
     })
     public ResponseEntity<PlayerSportDetailsDto> getSportDetails(
             @PathVariable("userId") UUID userId,
@@ -70,20 +70,20 @@ public class PlayerProfileController {
     }
 
     @GetMapping("/{userId}/matches")
-    @Operation(summary = "Get paginated player match history")
+    @Operation(summary = "Get paginated player round history")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Match history retrieved successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid cursor or limit"),
-            @ApiResponse(responseCode = "404", description = "Player profile or sport not found")
+            @ApiResponse(responseCode = "404", description = "Player profile not found")
     })
-    public ResponseEntity<CursorPageDto<PlayerGameHistoryDto>> getMatches(
+    public ResponseEntity<CursorPageDto<PlayerRoundHistoryDto>> getMatches(
             @PathVariable("userId") UUID userId,
             @RequestParam(name = "sportId", required = false) Long sportId,
             @RequestParam(name = "cursor", required = false) String cursor,
             @RequestParam(name = "limit", defaultValue = "20") int limit
     ) {
         return ResponseEntity.ok(
-                gameResultService.getPlayerMatches(
+                roundResultService.getPlayerMatches(
                         userId,
                         sportId,
                         cursor,

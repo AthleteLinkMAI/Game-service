@@ -22,8 +22,8 @@ public record PlayerSummaryDto(
             @Schema(description = "Number of sports played", example = "2")
             long sportsPlayed,
 
-            @Schema(description = "Total number of games", example = "12")
-            int gamesPlayed,
+            @Schema(description = "Total number of rounds", example = "12")
+            int roundsPlayed,
 
             @Schema(description = "Total wins", example = "7")
             int wins,

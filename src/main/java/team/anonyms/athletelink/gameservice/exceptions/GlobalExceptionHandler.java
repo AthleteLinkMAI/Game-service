@@ -30,15 +30,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("Not Found", ex.getMessage()));
     }
 
-    @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ErrorResponse> handleConflict(
-            ConflictException ex
-    ) {
-        logger.warn("Request conflict: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ErrorResponse("Conflict", ex.getMessage()));
-    }
-
     @ExceptionHandler(InvalidCursorException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCursor(
             InvalidCursorException ex

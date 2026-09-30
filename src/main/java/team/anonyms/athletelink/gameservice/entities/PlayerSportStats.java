@@ -28,9 +28,8 @@ public class PlayerSportStats {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private PlayerProfile playerProfile;
 
-    @NotNull(message = "Sport is required")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    private Sport sport;
+    @NotNull(message = "Sport ID is required")
+    private Long sportId;
 
     @NotNull
     @Builder.Default
