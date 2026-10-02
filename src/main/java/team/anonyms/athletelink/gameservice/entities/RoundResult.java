@@ -41,6 +41,9 @@ public class RoundResult {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private GameResultStatus status;
 
+    @NotNull
+    private UUID recordedBy;
+
     @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
