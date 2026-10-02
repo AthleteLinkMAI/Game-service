@@ -30,7 +30,7 @@ public final class RankTiers {
         }
     }
 
-    public static final int INITIAL_SCORE = 0;
+    public static final int INITIAL_SCORE = 1000;
 
     public static final List<Tier> VALUES = List.of(
             new Tier(Name.BRONZE, 1, 0, 999),
