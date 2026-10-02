@@ -84,6 +84,7 @@ public class RoundResultService {
                 .roundNumber(dto.roundNumber())
                 .sportId(dto.sportId())
                 .status(GameResultStatus.CONFIRMED)
+                .recordedBy(dto.recordedBy())
                 .build());
 
         for (SubmitRoundResultDto.PlayerResultEntry player : dto.players()) {

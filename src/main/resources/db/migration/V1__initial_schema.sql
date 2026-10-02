@@ -21,6 +21,7 @@ CREATE TABLE round_results (
     round_number INT NOT NULL CHECK (round_number > 0),
     sport_id BIGINT NOT NULL CHECK (sport_id > 0),
     status game_result_status NOT NULL DEFAULT 'PENDING',
+    recorded_by UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_round_results_request_round UNIQUE (activity_request_id, round_number)
 );
