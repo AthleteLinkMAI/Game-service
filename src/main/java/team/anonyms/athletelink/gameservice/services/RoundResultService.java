@@ -89,7 +89,7 @@ public class RoundResultService {
         for (SubmitRoundResultDto.PlayerResultEntry player : dto.players()) {
             int oldScore = scoresBeforeRound.get(player.userId());
             double opponentAverage = scoresBeforeRound.entrySet().stream()
-                    .filter(candidate -> !candidate.getKey().equals(player.userId()))
+                    .filter(candidate -> !candidate.getKey().equals(player.userId())) // TODO: fix to the average of opponent team, not average of all players
                     .mapToInt(Map.Entry::getValue)
                     .average()
                     .orElse(oldScore);
@@ -214,7 +214,14 @@ public class RoundResultService {
     }
 
     /** Placeholder until the team approves the per-sport rating formula. */
+    // TODO: fix in the future
     private int calculateRatingChange(int playerScore, double opponentAverageScore, GameOutcome outcome) {
-        return 0;
+        int k = 0;
+        switch (outcome) {
+            case WIN -> k = 1;
+            case LOSS -> k = -1;
+        }
+
+        return (int) (opponentAverageScore / playerScore * 50) * k;
     }
 }

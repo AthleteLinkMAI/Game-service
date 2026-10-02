@@ -47,4 +47,5 @@ app:
   kafka:
     topics:
       user-changes: ${USER_CHANGES_TOPIC:user.changes}
-      round-results: ${GAME_ROUND_RESULTS_TOPIC:activity.round-results}
+      game-commands: ${GAME_COMMANDS_TOPIC:game.commands}
+      game-replies: ${GAME_REPLIES_TOPIC:game.replies}

@@ -36,7 +36,7 @@ public class KafkaConsumerService {
         }
     }
 
-    @KafkaListener(topics = "${app.kafka.topics.round-results}", groupId = "${spring.application.name}")
+    @KafkaListener(topics = "${app.kafka.topics.game-commands}", groupId = "${spring.application.name}")
     public void receiveRoundResult(String json) {
         roundResultService.submitRoundResult(parse(json, SubmitRoundResultDto.class));
     }
