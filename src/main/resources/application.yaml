@@ -11,14 +11,6 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
   jpa:
     hibernate:
       ddl-auto: validate
@@ -42,11 +34,6 @@ spring:
       properties:
         key-deserializer: org.apache.kafka.common.serealization.UUIDDeserializer
         value-deserializer: org.springframework.kafka.support.deserializer.JacksonJsonDeserializer
-
-app:
-  kafka:
-    topics:
-      user-changes: user.changes
 
 server:
   port: 8082

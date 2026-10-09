@@ -15,8 +15,7 @@ public record SubmitRoundResultDto(
         @NotNull UUID activityRequestId,
         @NotNull @Min(1) Long sportId,
         @JsonAlias("round_number") @Min(1) int roundNumber,
-        @NotEmpty List<@NotNull @Valid PlayerResultEntry> players,
-        @NotNull UUID recordedBy
+        @NotEmpty List<@NotNull @Valid PlayerResultEntry> players
 ) {
     public record PlayerResultEntry(
             @NotNull UUID userId,
