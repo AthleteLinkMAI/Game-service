@@ -31,8 +31,7 @@ public class LeaderboardController {
     @Operation(summary = "Get sport leaderboard")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Leaderboard retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid cursor or limit"),
-            @ApiResponse(responseCode = "404", description = "Sport not found")
+            @ApiResponse(responseCode = "400", description = "Invalid sport ID, cursor or limit")
     })
     public ResponseEntity<CursorPageDto<LeaderboardEntryDto>> getLeaderboard(
             @PathVariable("sportId") Long sportId,

@@ -9,33 +9,34 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import team.anonyms.athletelink.gameservice.dto.GameResultDetailsDto;
-import team.anonyms.athletelink.gameservice.services.GameResultService;
+import team.anonyms.athletelink.gameservice.dto.RoundResultDetailsDto;
+import team.anonyms.athletelink.gameservice.services.RoundResultService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/results")
 @Tag(name = "Results")
-public class GameResultQueryController {
+public class RoundResultQueryController {
 
-    private final GameResultService gameResultService;
+    private final RoundResultService roundResultService;
 
-    public GameResultQueryController(GameResultService gameResultService) {
-        this.gameResultService = gameResultService;
+    public RoundResultQueryController(RoundResultService roundResultService) {
+        this.roundResultService = roundResultService;
     }
 
     @GetMapping("/by-request/{activityRequestId}")
-    @Operation(summary = "Get result by activity request")
+    @Operation(summary = "Get all round results for an activity request in round-number order")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Game result retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Game result not found")
+            @ApiResponse(responseCode = "200", description = "Round results retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "No round results found")
     })
-    public ResponseEntity<GameResultDetailsDto> getByActivityRequest(
+    public ResponseEntity<List<RoundResultDetailsDto>> getByActivityRequest(
             @PathVariable("activityRequestId") UUID activityRequestId
     ) {
         return ResponseEntity.ok(
-                gameResultService.getGameResultByActivityRequestId(activityRequestId)
+                roundResultService.getRoundResultsByActivityRequestId(activityRequestId)
         );
     }
 }

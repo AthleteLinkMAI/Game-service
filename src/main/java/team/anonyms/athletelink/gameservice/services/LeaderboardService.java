@@ -6,13 +6,11 @@ import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
 import team.anonyms.athletelink.gameservice.dto.LeaderboardEntryDto;
 import team.anonyms.athletelink.gameservice.dto.RankDto;
 import team.anonyms.athletelink.gameservice.exceptions.InvalidCursorException;
-import team.anonyms.athletelink.gameservice.exceptions.ResourceNotFoundException;
 import team.anonyms.athletelink.gameservice.pagination.CursorService;
 import team.anonyms.athletelink.gameservice.pagination.LeaderboardCursor;
 import team.anonyms.athletelink.gameservice.ranks.RankTiers;
 import team.anonyms.athletelink.gameservice.repositories.LeaderboardRowProjection;
 import team.anonyms.athletelink.gameservice.repositories.PlayerSportStatsRepository;
-import team.anonyms.athletelink.gameservice.repositories.SportRepository;
 
 import java.util.List;
 
@@ -26,16 +24,13 @@ public class LeaderboardService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final PlayerSportStatsRepository playerSportStatsRepository;
-    private final SportRepository sportRepository;
     private final CursorService cursorService;
 
     public LeaderboardService(
             PlayerSportStatsRepository playerSportStatsRepository,
-            SportRepository sportRepository,
             CursorService cursorService
     ) {
         this.playerSportStatsRepository = playerSportStatsRepository;
-        this.sportRepository = sportRepository;
         this.cursorService = cursorService;
     }
 
@@ -56,9 +51,9 @@ public class LeaderboardService {
             int limit
     ) {
         validateLimit(limit);
-        sportRepository.findById(sportId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Sport not found: " + sportId));
+        if (sportId == null || sportId < 1) {
+            throw new IllegalArgumentException("Sport ID must be positive");
+        }
 
         LeaderboardCursor decodedCursor = decodeCursor(cursor, sportId);
 

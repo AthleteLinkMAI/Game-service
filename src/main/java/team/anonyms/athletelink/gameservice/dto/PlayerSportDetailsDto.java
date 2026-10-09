@@ -13,11 +13,8 @@ public record PlayerSportDetailsDto(
         @Schema(description = "Sport ID", example = "1")
         Long sportId,
 
-        @Schema(description = "Sport name", example = "Football")
-        String sportName,
-
-        @Schema(description = "Games played in this sport", example = "8")
-        int gamesPlayed,
+        @Schema(description = "Rounds played in this sport", example = "8")
+        int roundsPlayed,
 
         @Schema(description = "Wins in this sport", example = "5")
         int wins,

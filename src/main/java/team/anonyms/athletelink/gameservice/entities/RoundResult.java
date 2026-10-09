@@ -1,13 +1,13 @@
 package team.anonyms.athletelink.gameservice.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import team.anonyms.athletelink.gameservice.enums.GameResultStatus;
-
-import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -18,24 +18,31 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(name = "game_results")
-public class GameResult {
+@Table(name = "round_results")
+public class RoundResult {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotNull(message = "Activity request ID is required")
+    @NotNull
     private UUID activityRequestId;
 
-    @NotNull(message = "Sport is required")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    private Sport sport;
+    @NotNull
+    @Min(1)
+    private Integer roundNumber;
 
-    @NotNull(message = "Game result status is required")
+    @NotNull
+    @Min(1)
+    private Long sportId;
+
+    @NotNull
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private GameResultStatus status;
+
+    @NotNull
+    private UUID recordedBy;
 
     @CreationTimestamp
     @Column(updatable = false)

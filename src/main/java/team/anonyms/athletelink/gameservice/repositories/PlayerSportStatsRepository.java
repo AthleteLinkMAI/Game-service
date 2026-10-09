@@ -1,6 +1,7 @@
 package team.anonyms.athletelink.gameservice.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,10 +13,14 @@ import java.util.UUID;
 public interface PlayerSportStatsRepository
         extends JpaRepository<PlayerSportStats, UUID> {
 
-    Optional<PlayerSportStats> findByPlayerProfileIdAndSportId(
+    Optional<PlayerSportStats> findByPlayerProfile_IdAndSportId(
             UUID playerProfileId,
             Long sportId
     );
+
+    @Modifying
+    @Query("DELETE FROM PlayerSportStats stats WHERE stats.playerProfile.id = :profileId")
+    void deleteByProfileId(@Param("profileId") UUID profileId);
 
     @Query(value = """
             SELECT
