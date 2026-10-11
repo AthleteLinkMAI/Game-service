@@ -44,9 +44,9 @@ public class GlobalExceptionHandler {
         return request.getMethod() + " " + request.getRequestURI();
     }
 
-    @ExceptionHandler({ResourceNotFoundException.class, EntityNotFoundException.class})
+    @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
-            Exception ex,
+            ResourceNotFoundException ex,
             HttpServletRequest request
     ) {
         makeDefaultErrorLog(ex, request);
