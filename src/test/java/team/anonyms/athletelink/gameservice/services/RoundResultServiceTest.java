@@ -106,7 +106,8 @@ class RoundResultServiceTest {
         SubmitRoundResultDto differentPayload = new SubmitRoundResultDto(
                 requestId, 99L, 1, List.of(
                         new SubmitRoundResultDto.PlayerResultEntry(winner.getUserId(), GameOutcome.LOSS),
-                        new SubmitRoundResultDto.PlayerResultEntry(loser.getUserId(), GameOutcome.WIN)));
+                        new SubmitRoundResultDto.PlayerResultEntry(loser.getUserId(), GameOutcome.WIN)),
+                UUID.randomUUID());
 
         assertEquals(existing.getId(), service.submitRoundResult(differentPayload));
         verify(roundResultRepository, never()).save(any());
@@ -190,7 +191,8 @@ class RoundResultServiceTest {
             UUID requestId, int roundNumber, PlayerProfile winner, PlayerProfile loser) {
         return new SubmitRoundResultDto(requestId, 7L, roundNumber, List.of(
                 new SubmitRoundResultDto.PlayerResultEntry(winner.getUserId(), GameOutcome.WIN),
-                new SubmitRoundResultDto.PlayerResultEntry(loser.getUserId(), GameOutcome.LOSS)));
+                new SubmitRoundResultDto.PlayerResultEntry(loser.getUserId(), GameOutcome.LOSS)),
+                UUID.randomUUID());
     }
 
     private PlayerProfile profile() {

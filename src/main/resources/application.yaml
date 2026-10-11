@@ -53,7 +53,14 @@ management:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: DEBUG
+  file:
+    name: ./logs/athletelink-game-service.log
+  structured:
+    format:
+      file: ecs
+    json:
+      exclude: ecs
+
 springdoc:
   override-with-generic-response: false
 

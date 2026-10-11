@@ -1,6 +1,7 @@
 .git/
 .idea/
 target/
+logs/
 src/test/
 *.iml
 .env
