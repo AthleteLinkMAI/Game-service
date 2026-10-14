@@ -1,18 +1,15 @@
-FROM ghcr.io/graalvm/native-image-community:25 AS build
-
-COPY --from=maven:3.9.13-eclipse-temurin-25 /usr/share/maven /usr/share/maven
-RUN ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+FROM maven:3.9.13-eclipse-temurin-25 AS build
 
 WORKDIR /app
-COPY pom.xml ./
-COPY src/main ./src/main
-RUN mvn -B -ntp -Pnative -DskipTests native:compile
+COPY . .
 
-FROM debian:bookworm-slim
+RUN mvn clean package
+
+FROM eclipse-temurin:25-jre
 WORKDIR /app
-RUN mkdir -p /logs && chown 10001:10001 /logs
-COPY --from=build /app/target/game-service /app/target/*.so /app/
-ENV LOGGING_FILE_NAME=/logs/game-service.log
-USER 10001:10001
+
+COPY --from=build /app/target/game-service-0.0.1.jar /app.jar
+
 EXPOSE 8080
-ENTRYPOINT ["/app/game-service"]
+
+ENTRYPOINT ["java", "-jar", "/app.jar"]
