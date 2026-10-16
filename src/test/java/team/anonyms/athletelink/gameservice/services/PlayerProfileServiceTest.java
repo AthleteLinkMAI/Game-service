@@ -57,12 +57,12 @@ class PlayerProfileServiceTest {
         PlayerProfile profile = profile();
         PlayerSportStats stats = PlayerSportStats.builder().id(UUID.randomUUID())
                 .playerProfile(profile).sportId(7L)
-                .wins(5).losses(2).draws(1).score(1200).build();
+                .wins(5).losses(2).draws(1).score(2200).build();
         when(playerProfileRepository.findByUserId(profile.getUserId()))
                 .thenReturn(Optional.of(profile));
         when(playerSportStatsRepository.findByPlayerProfile_IdAndSportId(profile.getId(), 7L))
                 .thenReturn(Optional.of(stats));
-        when(playerSportStatsRepository.countPlayersAhead(7L, 1200)).thenReturn(6L);
+        when(playerSportStatsRepository.countPlayersAhead(7L, 2200)).thenReturn(6L);
 
         var response = service.getSportDetails(profile.getUserId(), 7L);
         assertEquals(7L, response.sportId());

@@ -1,15 +1,15 @@
 FROM maven:3.9.13-eclipse-temurin-25 AS build
-WORKDIR /app
-COPY pom.xml ./
-COPY src/main ./src/main
 
-RUN mvn -B -ntp -DskipTests package
+WORKDIR /app
+COPY . .
+
+RUN mvn clean package
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 
-COPY --from=build /app/target/game-service.jar /app.jar
-USER 10001:10001
-EXPOSE 8082
+COPY --from=build /app/target/game-service-0.0.1.jar /app.jar
+
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "/app.jar"]

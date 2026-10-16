@@ -4,7 +4,9 @@ spring:
   mvc:
     servlet:
       path: /api/v1
-  
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:postgresql://localhost:5432/game_db
     username: ${DB_USER:postgres}
@@ -55,7 +57,14 @@ management:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: DEBUG
+  file:
+    name: ./logs/athletelink-game-service.log
+  structured:
+    format:
+      file: ecs
+    json:
+      exclude: ecs
+
 springdoc:
   override-with-generic-response: false
 

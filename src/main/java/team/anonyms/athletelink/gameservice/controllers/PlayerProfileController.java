@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +25,8 @@ import java.util.UUID;
 @RequestMapping("/players")
 @Tag(name = "Player profiles", description = "API for viewing player profiles and match history")
 public class PlayerProfileController {
+
+    private static final Logger log = LoggerFactory.getLogger(PlayerProfileController.class);
 
     private final PlayerProfileService playerProfileService;
     private final RoundResultService roundResultService;
@@ -44,6 +48,10 @@ public class PlayerProfileController {
     public ResponseEntity<PlayerSummaryDto> getSummary(
             @PathVariable("userId") UUID userId
     ) {
+        log.atInfo()
+                .setMessage("API endpoint is called")
+                .addKeyValue("API endpoint", "GET /api/v1/players/{userId}")
+                .log();
         return ResponseEntity.ok(
                 playerProfileService.getSummary(userId)
         );
@@ -61,6 +69,10 @@ public class PlayerProfileController {
             @PathVariable("userId") UUID userId,
             @PathVariable("sportId") Long sportId
     ) {
+        log.atInfo()
+                .setMessage("API endpoint is called")
+                .addKeyValue("API endpoint", "GET /api/v1/players/{userId}/sports/{sportId}")
+                .log();
         return ResponseEntity.ok(
                 playerProfileService.getSportDetails(
                         userId,
@@ -82,6 +94,10 @@ public class PlayerProfileController {
             @RequestParam(name = "cursor", required = false) String cursor,
             @RequestParam(name = "limit", defaultValue = "20") int limit
     ) {
+        log.atInfo()
+                .setMessage("API endpoint is called")
+                .addKeyValue("API endpoint", "GET /api/v1/players/{userId}/matches")
+                .log();
         return ResponseEntity.ok(
                 roundResultService.getPlayerMatches(
                         userId,

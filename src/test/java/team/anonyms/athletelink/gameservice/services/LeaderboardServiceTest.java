@@ -33,7 +33,7 @@ class LeaderboardServiceTest {
 
     @Test
     void leaderboardWorksWithoutSportCatalogAndRequestsExtraRow() {
-        LeaderboardRowProjection first = row(1200, 1);
+        LeaderboardRowProjection first = row(2200, 1);
         LeaderboardRowProjection extra = mock(LeaderboardRowProjection.class);
         when(statsRepository.findLeaderboard(7L, null, null, 2))
                 .thenReturn(List.of(first, extra));
