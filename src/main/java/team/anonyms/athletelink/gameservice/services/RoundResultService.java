@@ -3,10 +3,7 @@ package team.anonyms.athletelink.gameservice.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
-import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
-import team.anonyms.athletelink.gameservice.dto.RoundResultDetailsDto;
-import team.anonyms.athletelink.gameservice.dto.SubmitRoundResultDto;
+import team.anonyms.athletelink.gameservice.dto.*;
 import team.anonyms.athletelink.gameservice.dto.kafka.GameReply;
 import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
 import team.anonyms.athletelink.gameservice.entities.PlayerRoundResult;
@@ -49,7 +46,7 @@ public class RoundResultService {
         validateResult(dto);
 
         var existing = roundResultRepository.findByActivityRequestIdAndRoundNumber(
-                dto.activityRequestId(), dto.roundNumber());
+                dto.requestId(), dto.roundNumber());
         if (existing.isPresent()) {
             return existing.get().getId();
         }
@@ -71,7 +68,7 @@ public class RoundResultService {
         }
 
         RoundResult round = roundResultRepository.save(RoundResult.builder()
-                .activityRequestId(dto.activityRequestId())
+                .activityRequestId(dto.requestId())
                 .roundNumber(dto.roundNumber())
                 .sportId(dto.sportId())
                 .status(GameResultStatus.CONFIRMED)
@@ -107,8 +104,8 @@ public class RoundResultService {
 
             kafkaProducerService.sendGameReplies(
                     new GameReply(
-                            dto.activityRequestId(),
                             "CLOSE_REQUEST_RESOLVED",
+                            dto.requestId(),
                             true,
                             null
                     )
@@ -117,9 +114,26 @@ public class RoundResultService {
         return round.getId();
     }
 
+    public void validateGameForClosing(CloseRequestDto dto) {
+        List<RoundResult> roundResults = roundResultRepository.findAllByActivityRequestIdOrderByRoundNumberAsc(dto.requestId());
+
+        if (roundResults.size() != dto.expectedRounds()) {
+            kafkaProducerService.sendGameReplies(
+                    new GameReply(
+                            "CLOSE_REQUEST_UNRESOLVED",
+                            dto.requestId(),
+                            false,
+                            "Insufficient number of rounds"
+                    )
+            );
+        }
+
+        kafkaProducerService.sendGameReplies(new GameReply("CLOSE_REQUEST_RESOLVED", dto.requestId(), true, null));
+    }
+
     @Deprecated(forRemoval = true)
     private void validateResult(SubmitRoundResultDto dto) {
-        if (dto == null || dto.activityRequestId() == null) {
+        if (dto == null || dto.requestId() == null) {
             throw new IllegalArgumentException("Activity request ID is required");
         }
         if (dto.sportId() == null || dto.sportId() < 1) {

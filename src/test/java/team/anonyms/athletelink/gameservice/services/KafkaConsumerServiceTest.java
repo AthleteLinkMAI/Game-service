@@ -44,7 +44,7 @@ class KafkaConsumerServiceTest {
 
         var captor = org.mockito.ArgumentCaptor.forClass(SubmitRoundResultDto.class);
         verify(roundResultService).submitRoundResult(captor.capture());
-        assertEquals(requestId, captor.getValue().activityRequestId());
+        assertEquals(requestId, captor.getValue().requestId());
         assertEquals(2, captor.getValue().roundNumber());
         assertEquals(userId, captor.getValue().players().getFirst().userId());
     }

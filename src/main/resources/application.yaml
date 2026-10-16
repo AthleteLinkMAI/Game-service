@@ -34,8 +34,13 @@ spring:
       key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
-        key-deserializer: org.apache.kafka.common.serealization.UUIDDeserializer
-        value-deserializer: org.springframework.kafka.support.deserializer.JacksonJsonDeserializer
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.UUIDDeserializer
+        spring.deserializer.value.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        spring.json.add.type.headers: false
 
 server:
   port: 8082
@@ -72,5 +77,6 @@ app:
   kafka:
     topics:
       user-changes: ${USER_CHANGES_TOPIC:user.changes}
-      game-commands: ${GAME_COMMANDS_TOPIC:game.commands}
+      game-submit-rounds: ${GAME_SUBMIT_ROUNDS_TOPIC:game.submit.rounds}
+      game-close-requests: ${GAME_CLOSE_REQUESTS:game.close.requests}
       game-replies: ${GAME_REPLIES_TOPIC:game.replies}

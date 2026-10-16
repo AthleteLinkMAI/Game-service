@@ -2,27 +2,22 @@ package team.anonyms.athletelink.gameservice.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import team.anonyms.athletelink.gameservice.dto.CloseRequestDto;
 import team.anonyms.athletelink.gameservice.dto.SubmitRoundResultDto;
 import team.anonyms.athletelink.gameservice.dto.UserChange;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class KafkaConsumerService {
 
     private final ObjectMapper objectMapper;
     private final PlayerProfileService playerProfileService;
     private final RoundResultService roundResultService;
-
-    public KafkaConsumerService(
-            ObjectMapper objectMapper,
-            PlayerProfileService playerProfileService,
-            RoundResultService roundResultService
-    ) {
-        this.objectMapper = objectMapper;
-        this.playerProfileService = playerProfileService;
-        this.roundResultService = roundResultService;
-    }
 
     @KafkaListener(topics = "${app.kafka.topics.user-changes}", groupId = "${spring.application.name}")
     public void receiveUserChange(String json) {
@@ -36,9 +31,22 @@ public class KafkaConsumerService {
         }
     }
 
-    @KafkaListener(topics = "${app.kafka.topics.game-commands}", groupId = "${spring.application.name}")
+    @KafkaListener(topics = "${app.kafka.topics.game-submit-rounds}", groupId = "${spring.application.name}")
     public void receiveRoundResult(String json) {
-        roundResultService.submitRoundResult(parse(json, SubmitRoundResultDto.class));
+        log.info("Invoked json: " + json);
+        SubmitRoundResultDto dto = parse(json, SubmitRoundResultDto.class);
+        log.info("Parsed dto = " + dto.toString());
+
+        roundResultService.submitRoundResult(dto);
+    }
+
+    @KafkaListener(topics = "${app.kafka.topics.game-close-requests}", groupId = "${spring.application.name}")
+    public void validateGameForClosing(String json) {
+        log.info("Invoked json: " + json);
+        CloseRequestDto dto = parse(json, CloseRequestDto.class);
+        log.info("Parsed dto = " + dto.toString());
+
+        roundResultService.validateGameForClosing(dto);
     }
 
     private <T> T parse(String json, Class<T> type) {

@@ -3,8 +3,8 @@ package team.anonyms.athletelink.gameservice.dto.kafka;
 import java.util.UUID;
 
 public record GameReply(
-        UUID requestId,
         String type,
+        UUID requestId,
         Boolean isSuccessful,
         String errorMessage
 ) {
