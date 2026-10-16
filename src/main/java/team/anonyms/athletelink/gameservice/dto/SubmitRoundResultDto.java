@@ -12,11 +12,13 @@ import java.util.UUID;
 
 /** Payload sent by Core for one completed round. */
 public record SubmitRoundResultDto(
-        @NotNull UUID activityRequestId,
-        @NotNull @Min(1) Long sportId,
+        @NotNull String type,
+        @NotNull UUID eventId,
+        @NotNull UUID requestId,
         @JsonAlias("round_number") @Min(1) int roundNumber,
-        @NotEmpty List<@NotNull @Valid PlayerResultEntry> players,
-        @NotNull UUID recordedBy
+        @NotNull @Min(1) Long sportId,
+        @NotNull UUID recordedBy,
+        @NotEmpty List<@NotNull @Valid PlayerResultEntry> players
 ) {
     public record PlayerResultEntry(
             @NotNull UUID userId,

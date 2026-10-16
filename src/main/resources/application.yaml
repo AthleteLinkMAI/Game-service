@@ -13,14 +13,6 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
   jpa:
     hibernate:
       ddl-auto: validate
@@ -34,6 +26,21 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.UUIDDeserializer
+        spring.deserializer.value.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        spring.json.add.type.headers: false
 
 server:
   port: 8082
@@ -70,5 +77,6 @@ app:
   kafka:
     topics:
       user-changes: ${USER_CHANGES_TOPIC:user.changes}
-      game-commands: ${GAME_COMMANDS_TOPIC:game.commands}
+      game-submit-rounds: ${GAME_SUBMIT_ROUNDS_TOPIC:game.submit.rounds}
+      game-close-requests: ${GAME_CLOSE_REQUESTS:game.close.requests}
       game-replies: ${GAME_REPLIES_TOPIC:game.replies}

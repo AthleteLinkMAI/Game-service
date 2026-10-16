@@ -1,11 +1,10 @@
 package team.anonyms.athletelink.gameservice.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
-import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
-import team.anonyms.athletelink.gameservice.dto.RoundResultDetailsDto;
-import team.anonyms.athletelink.gameservice.dto.SubmitRoundResultDto;
+import team.anonyms.athletelink.gameservice.dto.*;
+import team.anonyms.athletelink.gameservice.dto.kafka.GameReply;
 import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
 import team.anonyms.athletelink.gameservice.entities.PlayerRoundResult;
 import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
@@ -30,8 +29,8 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class RoundResultService {
-
     private static final String HISTORY_CURSOR_TYPE = "round-history";
     private static final int MAX_PAGE_SIZE = 100;
 
@@ -39,18 +38,7 @@ public class RoundResultService {
     private final PlayerRoundResultRepository playerRoundResultRepository;
     private final PlayerProfileService playerProfileService;
     private final CursorService cursorService;
-
-    public RoundResultService(
-            RoundResultRepository roundResultRepository,
-            PlayerRoundResultRepository playerRoundResultRepository,
-            PlayerProfileService playerProfileService,
-            CursorService cursorService
-    ) {
-        this.roundResultRepository = roundResultRepository;
-        this.playerRoundResultRepository = playerRoundResultRepository;
-        this.playerProfileService = playerProfileService;
-        this.cursorService = cursorService;
-    }
+    private final KafkaProducerService kafkaProducerService;
 
     /** One Kafka event is one round; all writes commit or roll back together. */
     @Transactional
@@ -58,7 +46,7 @@ public class RoundResultService {
         validateResult(dto);
 
         var existing = roundResultRepository.findByActivityRequestIdAndRoundNumber(
-                dto.activityRequestId(), dto.roundNumber());
+                dto.requestId(), dto.roundNumber());
         if (existing.isPresent()) {
             return existing.get().getId();
         }
@@ -80,11 +68,10 @@ public class RoundResultService {
         }
 
         RoundResult round = roundResultRepository.save(RoundResult.builder()
-                .activityRequestId(dto.activityRequestId())
+                .activityRequestId(dto.requestId())
                 .roundNumber(dto.roundNumber())
                 .sportId(dto.sportId())
                 .status(GameResultStatus.CONFIRMED)
-                .recordedBy(dto.recordedBy())
                 .build());
 
         for (SubmitRoundResultDto.PlayerResultEntry player : dto.players()) {
@@ -114,12 +101,39 @@ public class RoundResultService {
                 case DRAW -> stats.setDraws(stats.getDraws() + 1);
             }
             playerProfileService.saveSportStats(stats);
+
+            kafkaProducerService.sendGameReplies(
+                    new GameReply(
+                            "CLOSE_REQUEST_RESOLVED",
+                            dto.requestId(),
+                            true,
+                            null
+                    )
+            );
         }
         return round.getId();
     }
 
+    public void validateGameForClosing(CloseRequestDto dto) {
+        List<RoundResult> roundResults = roundResultRepository.findAllByActivityRequestIdOrderByRoundNumberAsc(dto.requestId());
+
+        if (roundResults.size() != dto.expectedRounds()) {
+            kafkaProducerService.sendGameReplies(
+                    new GameReply(
+                            "CLOSE_REQUEST_UNRESOLVED",
+                            dto.requestId(),
+                            false,
+                            "Insufficient number of rounds"
+                    )
+            );
+        }
+
+        kafkaProducerService.sendGameReplies(new GameReply("CLOSE_REQUEST_RESOLVED", dto.requestId(), true, null));
+    }
+
+    @Deprecated(forRemoval = true)
     private void validateResult(SubmitRoundResultDto dto) {
-        if (dto == null || dto.activityRequestId() == null) {
+        if (dto == null || dto.requestId() == null) {
             throw new IllegalArgumentException("Activity request ID is required");
         }
         if (dto.sportId() == null || dto.sportId() < 1) {
