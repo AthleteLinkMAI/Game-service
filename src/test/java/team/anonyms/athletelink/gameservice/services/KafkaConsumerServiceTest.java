@@ -36,9 +36,10 @@ class KafkaConsumerServiceTest {
         UUID requestId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         String json = """
-                {"activityRequestId":"%s","sportId":7,"roundNumber":2,
+                {"type":"ROUND_RESULT","eventId":"%s","requestId":"%s",
+                 "sportId":7,"roundNumber":2,"recordedBy":"%s",
                  "players":[{"userId":"%s","outcome":"WIN"}]}
-                """.formatted(requestId, userId);
+                """.formatted(UUID.randomUUID(), requestId, UUID.randomUUID(), userId);
 
         consumer.receiveRoundResult(json);
 
@@ -55,9 +56,10 @@ class KafkaConsumerServiceTest {
         UUID requestId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         String json = """
-                {"activityRequestId":"%s","sportId":7,"round_number":3,
+                {"type":"ROUND_RESULT","eventId":"%s","requestId":"%s",
+                 "sportId":7,"round_number":3,"recordedBy":"%s",
                  "players":[{"userId":"%s","outcome":"LOSS"}]}
-                """.formatted(requestId, userId);
+                """.formatted(UUID.randomUUID(), requestId, UUID.randomUUID(), userId);
 
         consumer.receiveRoundResult(json);
 

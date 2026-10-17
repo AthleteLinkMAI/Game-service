@@ -5,12 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import team.anonyms.athletelink.gameservice.dto.PlayerTotalsRow;
 import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
 import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
 import team.anonyms.athletelink.gameservice.repositories.PlayerProfileRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerRoundResultRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerSportStatsRepository;
-import team.anonyms.athletelink.gameservice.repositories.PlayerTotalsProjection;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -25,7 +25,6 @@ class PlayerProfileServiceTest {
     @Mock PlayerProfileRepository playerProfileRepository;
     @Mock PlayerSportStatsRepository playerSportStatsRepository;
     @Mock PlayerRoundResultRepository playerRoundResultRepository;
-    @Mock PlayerTotalsProjection totals;
 
     private PlayerProfileService service;
 
@@ -41,11 +40,8 @@ class PlayerProfileServiceTest {
         PlayerProfile profile = profile();
         when(playerProfileRepository.findByUserId(profile.getUserId()))
                 .thenReturn(Optional.of(profile));
-        when(playerSportStatsRepository.findTotalsByProfileId(profile.getId())).thenReturn(totals);
-        when(totals.getWins()).thenReturn(7L);
-        when(totals.getLosses()).thenReturn(4L);
-        when(totals.getDraws()).thenReturn(1L);
-        when(totals.getSportsPlayed()).thenReturn(2L);
+        when(playerSportStatsRepository.findTotalsByProfileId(profile.getId()))
+                .thenReturn(new PlayerTotalsRow(7L, 4L, 1L, 2L));
 
         var response = service.getSummary(profile.getUserId());
         assertEquals(12, response.summary().roundsPlayed());

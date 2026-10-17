@@ -2,9 +2,11 @@ package team.anonyms.athletelink.gameservice.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
-import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import team.anonyms.athletelink.gameservice.dto.LeaderboardRow;
+import team.anonyms.athletelink.gameservice.dto.PlayerTotalsRow;
+import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +33,7 @@ public interface PlayerSportStatsRepository
             FROM player_sport_stats
             WHERE player_profile_id = :profileId
             """, nativeQuery = true)
-    PlayerTotalsProjection findTotalsByProfileId(
+    PlayerTotalsRow findTotalsByProfileId(
             @Param("profileId") UUID profileId
     );
 
@@ -82,7 +84,7 @@ public interface PlayerSportStatsRepository
             ORDER BY score DESC, player_profile_id ASC
             LIMIT :limit
             """, nativeQuery = true)
-    List<LeaderboardRowProjection> findLeaderboard(
+    List<LeaderboardRow> findLeaderboard(
             @Param("sportId") Long sportId,
             @Param("cursorScore") Integer cursorScore,
             @Param("cursorProfileId") UUID cursorProfileId,

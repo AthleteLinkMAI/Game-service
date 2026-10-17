@@ -2,8 +2,9 @@ package team.anonyms.athletelink.gameservice.services;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.anonyms.athletelink.gameservice.dto.PlayerSportDetailsDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerSummaryDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerSportDetailsDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerTotalsRow;
 import team.anonyms.athletelink.gameservice.dto.RankDto;
 import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
 import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
@@ -12,7 +13,6 @@ import team.anonyms.athletelink.gameservice.ranks.RankTiers;
 import team.anonyms.athletelink.gameservice.repositories.PlayerProfileRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerRoundResultRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerSportStatsRepository;
-import team.anonyms.athletelink.gameservice.repositories.PlayerTotalsProjection;
 
 import java.util.UUID;
 
@@ -37,13 +37,13 @@ public class PlayerProfileService {
     public PlayerSummaryDto getSummary(UUID userId) {
         PlayerProfile profile = playerProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Player profile not found"));
-        PlayerTotalsProjection totals = playerSportStatsRepository.findTotalsByProfileId(profile.getId());
-        int wins = Math.toIntExact(totals.getWins());
-        int losses = Math.toIntExact(totals.getLosses());
-        int draws = Math.toIntExact(totals.getDraws());
+        PlayerTotalsRow totals = playerSportStatsRepository.findTotalsByProfileId(profile.getId());
+        int wins = Math.toIntExact(totals.wins());
+        int losses = Math.toIntExact(totals.losses());
+        int draws = Math.toIntExact(totals.draws());
 
         return new PlayerSummaryDto(userId, new PlayerSummaryDto.Summary(
-                totals.getSportsPlayed(), wins + losses + draws, wins, losses, draws
+                totals.sportsPlayed(), wins + losses + draws, wins, losses, draws
         ));
     }
 

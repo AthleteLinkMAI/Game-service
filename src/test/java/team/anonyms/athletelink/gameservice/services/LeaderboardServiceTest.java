@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import team.anonyms.athletelink.gameservice.dto.LeaderboardRow;
 import team.anonyms.athletelink.gameservice.exceptions.InvalidCursorException;
 import team.anonyms.athletelink.gameservice.pagination.CursorService;
 import team.anonyms.athletelink.gameservice.pagination.LeaderboardCursor;
-import team.anonyms.athletelink.gameservice.repositories.LeaderboardRowProjection;
 import team.anonyms.athletelink.gameservice.repositories.PlayerSportStatsRepository;
 
 import java.util.List;
@@ -33,8 +33,8 @@ class LeaderboardServiceTest {
 
     @Test
     void leaderboardWorksWithoutSportCatalogAndRequestsExtraRow() {
-        LeaderboardRowProjection first = row(2200, 1);
-        LeaderboardRowProjection extra = mock(LeaderboardRowProjection.class);
+        LeaderboardRow first = row(2200, 1);
+        LeaderboardRow extra = row(2100, 2);
         when(statsRepository.findLeaderboard(7L, null, null, 2))
                 .thenReturn(List.of(first, extra));
         when(cursorService.encode(any())).thenReturn("next");
@@ -55,15 +55,10 @@ class LeaderboardServiceTest {
         verifyNoInteractions(statsRepository);
     }
 
-    private LeaderboardRowProjection row(int score, long seed) {
-        LeaderboardRowProjection row = mock(LeaderboardRowProjection.class);
-        when(row.getScore()).thenReturn(score);
-        when(row.getPlayerProfileId()).thenReturn(new UUID(0L, seed));
-        when(row.getUserId()).thenReturn(new UUID(1L, seed));
-        when(row.getWins()).thenReturn(1);
-        when(row.getLosses()).thenReturn(0);
-        when(row.getDraws()).thenReturn(0);
-        when(row.getPlace()).thenReturn(seed);
-        return row;
+    private LeaderboardRow row(int score, long seed) {
+        return new LeaderboardRow(
+                new UUID(0L, seed), new UUID(1L, seed), score,
+                1, 0, 0, seed
+        );
     }
 }

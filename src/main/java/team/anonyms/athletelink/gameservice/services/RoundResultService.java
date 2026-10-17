@@ -3,7 +3,12 @@ package team.anonyms.athletelink.gameservice.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import team.anonyms.athletelink.gameservice.dto.*;
+import team.anonyms.athletelink.gameservice.dto.CloseRequestDto;
+import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerHistoryRow;
+import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
+import team.anonyms.athletelink.gameservice.dto.RoundResultDetailsDto;
+import team.anonyms.athletelink.gameservice.dto.SubmitRoundResultDto;
 import team.anonyms.athletelink.gameservice.dto.kafka.GameReply;
 import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
 import team.anonyms.athletelink.gameservice.entities.PlayerRoundResult;
@@ -15,7 +20,6 @@ import team.anonyms.athletelink.gameservice.exceptions.InvalidCursorException;
 import team.anonyms.athletelink.gameservice.exceptions.ResourceNotFoundException;
 import team.anonyms.athletelink.gameservice.pagination.CursorService;
 import team.anonyms.athletelink.gameservice.pagination.RoundHistoryCursor;
-import team.anonyms.athletelink.gameservice.repositories.PlayerHistoryRowProjection;
 import team.anonyms.athletelink.gameservice.repositories.PlayerRoundResultRepository;
 import team.anonyms.athletelink.gameservice.repositories.RoundResultRepository;
 
@@ -196,21 +200,21 @@ public class RoundResultService {
             throw new IllegalArgumentException("Sport ID must be positive");
         }
         RoundHistoryCursor decoded = decodeHistoryCursor(cursor, profileId, sportId);
-        List<PlayerHistoryRowProjection> rows = playerRoundResultRepository.findHistory(
+        List<PlayerHistoryRow> rows = playerRoundResultRepository.findHistory(
                 profileId, sportId,
                 decoded == null ? null : decoded.createdAt(),
                 decoded == null ? null : decoded.roundResultId(),
                 limit + 1);
         boolean hasNext = rows.size() > limit;
-        List<PlayerHistoryRowProjection> pageRows = hasNext ? rows.subList(0, limit) : rows;
+        List<PlayerHistoryRow> pageRows = hasNext ? rows.subList(0, limit) : rows;
         List<PlayerRoundHistoryDto> items = pageRows.stream().map(row ->
                 new PlayerRoundHistoryDto(
-                        row.getRoundResultId(), row.getActivityRequestId(), row.getRoundNumber(),
-                        row.getSportId(), GameOutcome.valueOf(row.getOutcome()),
-                        row.getRatingChange(), row.getCreatedAt())).toList();
+                        row.roundResultId(), row.activityRequestId(), row.roundNumber(),
+                        row.sportId(), GameOutcome.valueOf(row.outcome()),
+                        row.ratingChange(), row.createdAt())).toList();
         String nextCursor = hasNext ? cursorService.encode(new RoundHistoryCursor(
                 HISTORY_CURSOR_TYPE, profileId, sportId,
-                pageRows.getLast().getCreatedAt(), pageRows.getLast().getRoundResultId())) : null;
+                pageRows.getLast().createdAt(), pageRows.getLast().roundResultId())) : null;
         return new CursorPageDto<>(items, nextCursor, hasNext);
     }
 

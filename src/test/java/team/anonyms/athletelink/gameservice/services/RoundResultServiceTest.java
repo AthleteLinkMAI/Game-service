@@ -17,7 +17,8 @@ import team.anonyms.athletelink.gameservice.enums.GameOutcome;
 import team.anonyms.athletelink.gameservice.enums.GameResultStatus;
 import team.anonyms.athletelink.gameservice.exceptions.ResourceNotFoundException;
 import team.anonyms.athletelink.gameservice.pagination.CursorService;
-import team.anonyms.athletelink.gameservice.repositories.PlayerHistoryRowProjection;
+import team.anonyms.athletelink.gameservice.dto.PlayerHistoryRow;
+import team.anonyms.athletelink.gameservice.ranks.RankTiers;
 import team.anonyms.athletelink.gameservice.repositories.PlayerRoundResultRepository;
 import team.anonyms.athletelink.gameservice.repositories.RoundResultRepository;
 
@@ -31,13 +32,12 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-// TODO: fix RoundResultServiceTest
 class RoundResultServiceTest {
-    /*
     @Mock RoundResultRepository roundResultRepository;
     @Mock PlayerRoundResultRepository playerRoundResultRepository;
     @Mock PlayerProfileService playerProfileService;
     @Mock CursorService cursorService;
+    @Mock KafkaProducerService kafkaProducerService;
 
     private RoundResultService service;
 
@@ -45,7 +45,7 @@ class RoundResultServiceTest {
     void setUp() {
         service = new RoundResultService(
                 roundResultRepository, playerRoundResultRepository,
-                playerProfileService, cursorService);
+                playerProfileService, cursorService, kafkaProducerService);
     }
 
     @Test
@@ -105,10 +105,10 @@ class RoundResultServiceTest {
         when(roundResultRepository.findByActivityRequestIdAndRoundNumber(requestId, 1))
                 .thenReturn(Optional.of(existing));
         SubmitRoundResultDto differentPayload = new SubmitRoundResultDto(
-                requestId, 99L, 1, List.of(
+                "ROUND_RESULT", UUID.randomUUID(), requestId, 1, 99L,
+                UUID.randomUUID(), List.of(
                         new SubmitRoundResultDto.PlayerResultEntry(winner.getUserId(), GameOutcome.LOSS),
-                        new SubmitRoundResultDto.PlayerResultEntry(loser.getUserId(), GameOutcome.WIN)),
-                UUID.randomUUID());
+                        new SubmitRoundResultDto.PlayerResultEntry(loser.getUserId(), GameOutcome.WIN)));
 
         assertEquals(existing.getId(), service.submitRoundResult(differentPayload));
         verify(roundResultRepository, never()).save(any());
@@ -166,15 +166,12 @@ class RoundResultServiceTest {
     void historyIncludesRequestAndRoundAndFetchesLimitPlusOne() {
         UUID profileId = UUID.randomUUID();
         UUID requestId = UUID.randomUUID();
-        PlayerHistoryRowProjection row = mock(PlayerHistoryRowProjection.class);
-        PlayerHistoryRowProjection extra = mock(PlayerHistoryRowProjection.class);
-        when(row.getRoundResultId()).thenReturn(UUID.randomUUID());
-        when(row.getActivityRequestId()).thenReturn(requestId);
-        when(row.getRoundNumber()).thenReturn(2);
-        when(row.getSportId()).thenReturn(7L);
-        when(row.getOutcome()).thenReturn("WIN");
-        when(row.getRatingChange()).thenReturn(0);
-        when(row.getCreatedAt()).thenReturn(Instant.parse("2026-09-30T10:00:00Z"));
+        PlayerHistoryRow row = new PlayerHistoryRow(
+                UUID.randomUUID(), requestId, 2, 7L, "WIN", 0,
+                Instant.parse("2026-09-30T10:00:00Z"));
+        PlayerHistoryRow extra = new PlayerHistoryRow(
+                UUID.randomUUID(), requestId, 1, 7L, "LOSS", 0,
+                Instant.parse("2026-09-29T10:00:00Z"));
         when(playerRoundResultRepository.findHistory(profileId, 7L, null, null, 2))
                 .thenReturn(List.of(row, extra));
         when(cursorService.encode(any())).thenReturn("next");
@@ -190,10 +187,10 @@ class RoundResultServiceTest {
 
     private SubmitRoundResultDto event(
             UUID requestId, int roundNumber, PlayerProfile winner, PlayerProfile loser) {
-        return new SubmitRoundResultDto(requestId, 7L, roundNumber, List.of(
+        return new SubmitRoundResultDto("ROUND_RESULT", UUID.randomUUID(), requestId,
+                roundNumber, 7L, UUID.randomUUID(), List.of(
                 new SubmitRoundResultDto.PlayerResultEntry(winner.getUserId(), GameOutcome.WIN),
-                new SubmitRoundResultDto.PlayerResultEntry(loser.getUserId(), GameOutcome.LOSS)),
-                UUID.randomUUID());
+                new SubmitRoundResultDto.PlayerResultEntry(loser.getUserId(), GameOutcome.LOSS)));
     }
 
     private PlayerProfile profile() {
@@ -202,7 +199,6 @@ class RoundResultServiceTest {
 
     private PlayerSportStats stats(PlayerProfile profile) {
         return PlayerSportStats.builder().id(UUID.randomUUID()).playerProfile(profile)
-                .sportId(7L).build();
+                .sportId(7L).score(RankTiers.INITIAL_SCORE).build();
     }
-*/
 }

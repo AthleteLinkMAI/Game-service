@@ -4,12 +4,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
 import team.anonyms.athletelink.gameservice.dto.LeaderboardEntryDto;
+import team.anonyms.athletelink.gameservice.dto.LeaderboardRow;
 import team.anonyms.athletelink.gameservice.dto.RankDto;
 import team.anonyms.athletelink.gameservice.exceptions.InvalidCursorException;
 import team.anonyms.athletelink.gameservice.pagination.CursorService;
 import team.anonyms.athletelink.gameservice.pagination.LeaderboardCursor;
 import team.anonyms.athletelink.gameservice.ranks.RankTiers;
-import team.anonyms.athletelink.gameservice.repositories.LeaderboardRowProjection;
 import team.anonyms.athletelink.gameservice.repositories.PlayerSportStatsRepository;
 
 import java.util.List;
@@ -57,7 +57,7 @@ public class LeaderboardService {
 
         LeaderboardCursor decodedCursor = decodeCursor(cursor, sportId);
 
-        List<LeaderboardRowProjection> rows = playerSportStatsRepository.findLeaderboard(
+        List<LeaderboardRow> rows = playerSportStatsRepository.findLeaderboard(
                 sportId,
                 decodedCursor == null ? null : decodedCursor.score(),
                 decodedCursor == null ? null : decodedCursor.playerProfileId(),
@@ -65,7 +65,7 @@ public class LeaderboardService {
         );
 
         boolean hasNext = rows.size() > limit;
-        List<LeaderboardRowProjection> pageRows = hasNext
+        List<LeaderboardRow> pageRows = hasNext
                 ? rows.subList(0, limit)
                 : rows;
 
@@ -94,17 +94,17 @@ public class LeaderboardService {
         return decoded;
     }
 
-    private String encodeNextCursor(LeaderboardRowProjection lastRow, Long sportId) {
+    private String encodeNextCursor(LeaderboardRow lastRow, Long sportId) {
         return cursorService.encode(new LeaderboardCursor(
                 CURSOR_TYPE,
                 sportId,
-                lastRow.getScore(),
-                lastRow.getPlayerProfileId()
+                lastRow.score(),
+                lastRow.playerProfileId()
         ));
     }
 
-    private LeaderboardEntryDto toDto(LeaderboardRowProjection row) {
-        RankTiers.Tier tier = RankTiers.findByScore(row.getScore());
+    private LeaderboardEntryDto toDto(LeaderboardRow row) {
+        RankTiers.Tier tier = RankTiers.findByScore(row.score());
         RankDto rank = new RankDto(
                 tier.name().name(),
                 tier.tier(),
@@ -113,12 +113,12 @@ public class LeaderboardService {
         );
 
         return new LeaderboardEntryDto(
-                row.getPlace(),
-                row.getUserId(),
-                row.getScore(),
-                row.getWins(),
-                row.getLosses(),
-                row.getDraws(),
+                row.place(),
+                row.userId(),
+                row.score(),
+                row.wins(),
+                row.losses(),
+                row.draws(),
                 rank
         );
     }

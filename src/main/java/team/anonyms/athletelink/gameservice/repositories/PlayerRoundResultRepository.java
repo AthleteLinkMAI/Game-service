@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import team.anonyms.athletelink.gameservice.dto.PlayerHistoryRow;
 import team.anonyms.athletelink.gameservice.entities.PlayerRoundResult;
 
 import java.time.Instant;
@@ -46,7 +47,7 @@ public interface PlayerRoundResultRepository extends JpaRepository<PlayerRoundRe
             ORDER BY rr.created_at DESC, rr.id DESC
             LIMIT :limit
             """, nativeQuery = true)
-    List<PlayerHistoryRowProjection> findHistory(
+    List<PlayerHistoryRow> findHistory(
             @Param("profileId") UUID profileId,
             @Param("sportId") Long sportId,
             @Param("cursorCreatedAt") Instant cursorCreatedAt,
