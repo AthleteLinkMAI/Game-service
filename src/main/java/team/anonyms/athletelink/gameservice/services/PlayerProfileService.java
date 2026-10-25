@@ -2,6 +2,8 @@ package team.anonyms.athletelink.gameservice.services;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import team.anonyms.athletelink.gameservice.dto.BestSportDto;
+import team.anonyms.athletelink.gameservice.dto.OtherSportDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerSummaryDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerSportDetailsDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerTotalsRow;
@@ -14,6 +16,8 @@ import team.anonyms.athletelink.gameservice.repositories.PlayerProfileRepository
 import team.anonyms.athletelink.gameservice.repositories.PlayerRoundResultRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerSportStatsRepository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -66,6 +70,51 @@ public class PlayerProfileService {
                 stats.getWins(), stats.getLosses(), stats.getDraws(),
                 stats.getScore(), leaderboardPlace, rank
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BestSportDto> getBestSport(UUID userId) {
+        List<PlayerSportStats> sports = getOrderedSportStats(userId);
+        if (sports.isEmpty()) {
+            return Optional.empty();
+        }
+
+        PlayerSportStats best = sports.getFirst();
+        int roundsPlayed = best.getWins() + best.getLosses() + best.getDraws();
+        double winRatePercent = roundsPlayed == 0
+                ? 0.0
+                : Math.round(best.getWins() * 1000.0 / roundsPlayed) / 10.0;
+        int score = best.getScore();
+        RankTiers.Tier tier = RankTiers.findByScore(score);
+
+        return Optional.of(new BestSportDto(
+                best.getSportId(), score, RankTiers.nextRankScore(score),
+                playerSportStatsRepository.countPlayersAhead(best.getSportId(), score) + 1,
+                best.getWins(), winRatePercent,
+                new RankDto(tier.name().name(), tier.tier(), tier.scoreMin(), tier.scoreMax())
+        ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OtherSportDto> getOtherSports(UUID userId) {
+        return getOrderedSportStats(userId).stream()
+                .skip(1)
+                .map(stats -> {
+                    int score = stats.getScore();
+                    RankTiers.Tier tier = RankTiers.findByScore(score);
+                    return new OtherSportDto(
+                            stats.getSportId(), score, RankTiers.nextRankScore(score),
+                            new RankDto(tier.name().name(), tier.tier(), tier.scoreMin(), tier.scoreMax())
+                    );
+                })
+                .toList();
+    }
+
+    private List<PlayerSportStats> getOrderedSportStats(UUID userId) {
+        PlayerProfile profile = playerProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Player profile not found"));
+        return playerSportStatsRepository
+                .findAllByPlayerProfile_IdOrderByScoreDescWinsDescSportIdAsc(profile.getId());
     }
 
     /** Auth CREATE events are safe to process again after a Kafka redelivery. */

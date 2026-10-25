@@ -84,4 +84,25 @@ class RecordProjectionIntegrationTest {
         assertEquals("WIN", history.getFirst().outcome());
         assertNotNull(history.getFirst().createdAt());
     }
+
+    @Test
+    void sportStatisticsAreOrderedByScoreWinsAndSportId() {
+        PlayerProfile player = playerProfileRepository.save(
+                PlayerProfile.builder().userId(UUID.randomUUID()).build());
+        playerSportStatsRepository.save(PlayerSportStats.builder()
+                .playerProfile(player).sportId(13L).score(2000).wins(1).build());
+        playerSportStatsRepository.save(PlayerSportStats.builder()
+                .playerProfile(player).sportId(12L).score(1800).wins(3).build());
+        playerSportStatsRepository.save(PlayerSportStats.builder()
+                .playerProfile(player).sportId(11L).score(1800).wins(3).build());
+        playerSportStatsRepository.save(PlayerSportStats.builder()
+                .playerProfile(player).sportId(10L).score(1800).wins(2).build());
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Long> sportIds = playerSportStatsRepository
+                .findAllByPlayerProfile_IdOrderByScoreDescWinsDescSportIdAsc(player.getId())
+                .stream().map(PlayerSportStats::getSportId).toList();
+        assertEquals(List.of(13L, 11L, 12L, 10L), sportIds);
+    }
 }

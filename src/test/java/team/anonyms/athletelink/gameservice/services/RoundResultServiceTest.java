@@ -185,6 +185,59 @@ class RoundResultServiceTest {
         verify(playerRoundResultRepository).findHistory(profileId, 7L, null, null, 2);
     }
 
+    @Test
+    void lastGameReturnsPersonalOutcomeAndAllRoundParticipants() {
+        UUID userId = UUID.randomUUID();
+        UUID profileId = UUID.randomUUID();
+        UUID roundId = UUID.randomUUID();
+        UUID requestId = UUID.randomUUID();
+        Instant recordedAt = Instant.parse("2026-10-20T10:00:00Z");
+        PlayerHistoryRow last = new PlayerHistoryRow(
+                roundId, requestId, 2, 7L, "DRAW", 0, recordedAt);
+        PlayerProfile other = profile();
+        when(playerProfileService.getProfileId(userId)).thenReturn(profileId);
+        when(playerRoundResultRepository.findHistory(profileId, null, null, null, 1))
+                .thenReturn(List.of(last));
+        when(playerRoundResultRepository.findAllByRoundResult_Id(roundId))
+                .thenReturn(List.of(
+                        PlayerRoundResult.builder()
+                                .playerProfile(other).build(),
+                        PlayerRoundResult.builder()
+                                .playerProfile(PlayerProfile.builder().userId(userId).build()).build()));
+
+        var response = service.getLastGame(userId).orElseThrow();
+        assertEquals(roundId, response.roundResultId());
+        assertEquals(requestId, response.activityRequestId());
+        assertEquals(2, response.roundNumber());
+        assertEquals(7L, response.sportId());
+        assertEquals(GameOutcome.DRAW, response.outcome());
+        assertEquals(recordedAt, response.createdAt());
+        assertEquals(List.of(userId, other.getUserId()).stream().sorted().toList(),
+                response.playerIds());
+    }
+
+    @Test
+    void lastGameIsEmptyWhenPlayerHasNoRounds() {
+        UUID userId = UUID.randomUUID();
+        UUID profileId = UUID.randomUUID();
+        when(playerProfileService.getProfileId(userId)).thenReturn(profileId);
+        when(playerRoundResultRepository.findHistory(profileId, null, null, null, 1))
+                .thenReturn(List.of());
+
+        assertTrue(service.getLastGame(userId).isEmpty());
+        verify(playerRoundResultRepository, never()).findAllByRoundResult_Id(any());
+    }
+
+    @Test
+    void lastGameRequiresAnExistingProfile() {
+        UUID userId = UUID.randomUUID();
+        when(playerProfileService.getProfileId(userId))
+                .thenThrow(new ResourceNotFoundException("Player profile not found"));
+
+        assertThrows(ResourceNotFoundException.class, () -> service.getLastGame(userId));
+        verifyNoInteractions(playerRoundResultRepository);
+    }
+
     private SubmitRoundResultDto event(
             UUID requestId, int roundNumber, PlayerProfile winner, PlayerProfile loser) {
         return new SubmitRoundResultDto("ROUND_RESULT", UUID.randomUUID(), requestId,

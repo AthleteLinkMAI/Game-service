@@ -8,10 +8,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import team.anonyms.athletelink.gameservice.dto.PlayerTotalsRow;
 import team.anonyms.athletelink.gameservice.entities.PlayerProfile;
 import team.anonyms.athletelink.gameservice.entities.PlayerSportStats;
+import team.anonyms.athletelink.gameservice.exceptions.ResourceNotFoundException;
 import team.anonyms.athletelink.gameservice.repositories.PlayerProfileRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerRoundResultRepository;
 import team.anonyms.athletelink.gameservice.repositories.PlayerSportStatsRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -68,6 +70,84 @@ class PlayerProfileServiceTest {
     }
 
     @Test
+    void bestSportUsesFirstOrderedSportAndItsOwnWinsAndWinRate() {
+        PlayerProfile profile = profile();
+        PlayerSportStats best = sportStats(profile, 7L, 2200, 3, 1, 1);
+        PlayerSportStats other = sportStats(profile, 8L, 1900, 20, 0, 0);
+        when(playerProfileRepository.findByUserId(profile.getUserId()))
+                .thenReturn(Optional.of(profile));
+        when(playerSportStatsRepository
+                .findAllByPlayerProfile_IdOrderByScoreDescWinsDescSportIdAsc(profile.getId()))
+                .thenReturn(List.of(best, other));
+        when(playerSportStatsRepository.countPlayersAhead(7L, 2200)).thenReturn(6L);
+
+        var response = service.getBestSport(profile.getUserId()).orElseThrow();
+        assertEquals(7L, response.sportId());
+        assertEquals(2200, response.score());
+        assertEquals(2500, response.nextRankScore());
+        assertEquals(7, response.leaderboardPlace());
+        assertEquals(3, response.wins());
+        assertEquals(60.0, response.winRatePercent());
+        assertEquals("GOLD", response.rank().name());
+        verify(playerSportStatsRepository).countPlayersAhead(7L, 2200);
+        verify(playerSportStatsRepository, never()).countPlayersAhead(eq(8L), anyInt());
+    }
+
+    @Test
+    void otherSportsExcludeBestAndKeepRepositoryOrder() {
+        PlayerProfile profile = profile();
+        when(playerProfileRepository.findByUserId(profile.getUserId()))
+                .thenReturn(Optional.of(profile));
+        when(playerSportStatsRepository
+                .findAllByPlayerProfile_IdOrderByScoreDescWinsDescSportIdAsc(profile.getId()))
+                .thenReturn(List.of(
+                        sportStats(profile, 7L, 2200, 3, 1, 1),
+                        sportStats(profile, 8L, 1900, 2, 1, 0),
+                        sportStats(profile, 9L, 1200, 0, 1, 0)));
+
+        var response = service.getOtherSports(profile.getUserId());
+        assertEquals(List.of(8L, 9L), response.stream().map(sport -> sport.sportId()).toList());
+        assertEquals(2000, response.getFirst().nextRankScore());
+        assertEquals("BRONZE", response.getLast().rank().name());
+        assertEquals(1500, response.getLast().nextRankScore());
+    }
+
+    @Test
+    void emptySportStatisticsHaveNoBestSportAndNoOtherSports() {
+        PlayerProfile profile = profile();
+        when(playerProfileRepository.findByUserId(profile.getUserId()))
+                .thenReturn(Optional.of(profile));
+        when(playerSportStatsRepository
+                .findAllByPlayerProfile_IdOrderByScoreDescWinsDescSportIdAsc(profile.getId()))
+                .thenReturn(List.of());
+
+        assertTrue(service.getBestSport(profile.getUserId()).isEmpty());
+        assertTrue(service.getOtherSports(profile.getUserId()).isEmpty());
+        verify(playerSportStatsRepository, never()).countPlayersAhead(anyLong(), anyInt());
+    }
+
+    @Test
+    void unknownProfileIsNotTreatedAsAnEmptySportList() {
+        UUID userId = UUID.randomUUID();
+        when(playerProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.getBestSport(userId));
+        assertThrows(ResourceNotFoundException.class, () -> service.getOtherSports(userId));
+    }
+
+    @Test
+    void bestSportWithNoRoundsHasZeroWinRate() {
+        PlayerProfile profile = profile();
+        when(playerProfileRepository.findByUserId(profile.getUserId()))
+                .thenReturn(Optional.of(profile));
+        when(playerSportStatsRepository
+                .findAllByPlayerProfile_IdOrderByScoreDescWinsDescSportIdAsc(profile.getId()))
+                .thenReturn(List.of(sportStats(profile, 7L, 1000, 0, 0, 0)));
+
+        assertEquals(0.0, service.getBestSport(profile.getUserId()).orElseThrow().winRatePercent());
+    }
+
+    @Test
     void authCreateIsIdempotent() {
         PlayerProfile existing = profile();
         when(playerProfileRepository.findByUserId(existing.getUserId()))
@@ -100,5 +180,11 @@ class PlayerProfileServiceTest {
 
     private PlayerProfile profile() {
         return PlayerProfile.builder().id(UUID.randomUUID()).userId(UUID.randomUUID()).build();
+    }
+
+    private PlayerSportStats sportStats(
+            PlayerProfile profile, Long sportId, int score, int wins, int losses, int draws) {
+        return PlayerSportStats.builder().id(UUID.randomUUID()).playerProfile(profile)
+                .sportId(sportId).score(score).wins(wins).losses(losses).draws(draws).build();
     }
 }

@@ -51,4 +51,10 @@ public final class RankTiers {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No rank tier configured for score " + score));
     }
+
+    public static Integer nextRankScore(int score) {
+        Tier current = findByScore(score);
+        int nextIndex = VALUES.indexOf(current) + 1;
+        return nextIndex < VALUES.size() ? VALUES.get(nextIndex).scoreMin() : null;
+    }
 }

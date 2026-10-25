@@ -12,13 +12,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import team.anonyms.athletelink.gameservice.dto.BestSportDto;
 import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
+import team.anonyms.athletelink.gameservice.dto.LastGameDto;
+import team.anonyms.athletelink.gameservice.dto.OtherSportDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerSportDetailsDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerSummaryDto;
 import team.anonyms.athletelink.gameservice.services.RoundResultService;
 import team.anonyms.athletelink.gameservice.services.PlayerProfileService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -79,6 +83,54 @@ public class PlayerProfileController {
                         sportId
                 )
         );
+    }
+
+    @GetMapping("/{userId}/best-sport")
+    @Operation(summary = "Get the player's highest-scoring sport")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Best sport retrieved successfully"),
+            @ApiResponse(responseCode = "204", description = "Player has no sport statistics"),
+            @ApiResponse(responseCode = "404", description = "Player profile not found")
+    })
+    public ResponseEntity<BestSportDto> getBestSport(@PathVariable("userId") UUID userId) {
+        log.atInfo()
+                .setMessage("API endpoint is called")
+                .addKeyValue("API endpoint", "GET /api/v1/players/{userId}/best-sport")
+                .log();
+        return playerProfileService.getBestSport(userId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/{userId}/other-sports")
+    @Operation(summary = "Get all player sports except the highest-scoring one")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Other sports retrieved, possibly empty"),
+            @ApiResponse(responseCode = "404", description = "Player profile not found")
+    })
+    public ResponseEntity<List<OtherSportDto>> getOtherSports(@PathVariable("userId") UUID userId) {
+        log.atInfo()
+                .setMessage("API endpoint is called")
+                .addKeyValue("API endpoint", "GET /api/v1/players/{userId}/other-sports")
+                .log();
+        return ResponseEntity.ok(playerProfileService.getOtherSports(userId));
+    }
+
+    @GetMapping("/{userId}/last-game")
+    @Operation(summary = "Get the most recently recorded round played by the user")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Last round retrieved successfully"),
+            @ApiResponse(responseCode = "204", description = "Player has no recorded rounds"),
+            @ApiResponse(responseCode = "404", description = "Player profile not found")
+    })
+    public ResponseEntity<LastGameDto> getLastGame(@PathVariable("userId") UUID userId) {
+        log.atInfo()
+                .setMessage("API endpoint is called")
+                .addKeyValue("API endpoint", "GET /api/v1/players/{userId}/last-game")
+                .log();
+        return roundResultService.getLastGame(userId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{userId}/matches")

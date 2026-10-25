@@ -20,6 +20,10 @@ public interface PlayerSportStatsRepository
             Long sportId
     );
 
+    List<PlayerSportStats> findAllByPlayerProfile_IdOrderByScoreDescWinsDescSportIdAsc(
+            UUID playerProfileId
+    );
+
     @Modifying
     @Query("DELETE FROM PlayerSportStats stats WHERE stats.playerProfile.id = :profileId")
     void deleteByProfileId(@Param("profileId") UUID profileId);

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.anonyms.athletelink.gameservice.dto.CloseRequestDto;
 import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
+import team.anonyms.athletelink.gameservice.dto.LastGameDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerHistoryRow;
 import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
 import team.anonyms.athletelink.gameservice.dto.RoundResultDetailsDto;
@@ -29,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -188,6 +190,28 @@ public class RoundResultService {
     public CursorPageDto<PlayerRoundHistoryDto> getPlayerMatches(
             UUID userId, Long sportId, String cursor, int limit) {
         return getPlayerHistory(playerProfileService.getProfileId(userId), sportId, cursor, limit);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<LastGameDto> getLastGame(UUID userId) {
+        UUID profileId = playerProfileService.getProfileId(userId);
+        List<PlayerHistoryRow> history = playerRoundResultRepository.findHistory(
+                profileId, null, null, null, 1);
+        if (history.isEmpty()) {
+            return Optional.empty();
+        }
+
+        PlayerHistoryRow last = history.getFirst();
+        List<UUID> playerIds = playerRoundResultRepository
+                .findAllByRoundResult_Id(last.roundResultId()).stream()
+                .map(result -> result.getPlayerProfile().getUserId())
+                .sorted()
+                .toList();
+        return Optional.of(new LastGameDto(
+                last.roundResultId(), last.activityRequestId(), last.roundNumber(),
+                last.sportId(), GameOutcome.valueOf(last.outcome()), last.createdAt(),
+                playerIds
+        ));
     }
 
     @Transactional(readOnly = true)
