@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import team.anonyms.athletelink.gameservice.dto.PageDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
 import team.anonyms.athletelink.gameservice.dto.RoundResultDetailsDto;
 import team.anonyms.athletelink.gameservice.dto.SubmitRoundResultDto;
@@ -170,13 +169,11 @@ class RoundResultServiceTest {
         when(playerRoundResultRepository.findHistory(profileId, 7L, 1, 1L))
                 .thenReturn(List.of(row));
 
-        PageDto<PlayerRoundHistoryDto> page =
+        List<PlayerRoundHistoryDto> page =
                 service.getPlayerHistory(profileId, 7L, 2, 1);
-        assertEquals(2, page.page());
-        assertEquals(1, page.cntPerPage());
-        assertEquals(1, page.items().size());
-        assertEquals(requestId, page.items().getFirst().activityRequestId());
-        assertEquals(2, page.items().getFirst().roundNumber());
+        assertEquals(1, page.size());
+        assertEquals(requestId, page.getFirst().activityRequestId());
+        assertEquals(2, page.getFirst().roundNumber());
         verify(playerRoundResultRepository).findHistory(profileId, 7L, 1, 1L);
     }
 
@@ -186,8 +183,8 @@ class RoundResultServiceTest {
         when(playerRoundResultRepository.findHistory(profileId, null, 20, 20L))
                 .thenReturn(List.of());
 
-        PageDto<PlayerRoundHistoryDto> page = service.getPlayerHistory(profileId, null, 2, 20);
-        assertTrue(page.items().isEmpty());
+        List<PlayerRoundHistoryDto> page = service.getPlayerHistory(profileId, null, 2, 20);
+        assertTrue(page.isEmpty());
     }
 
     @Test

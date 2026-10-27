@@ -9,7 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import team.anonyms.athletelink.gameservice.dto.BestSportDto;
 import team.anonyms.athletelink.gameservice.dto.LastGameDto;
-import team.anonyms.athletelink.gameservice.dto.PageDto;
+import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
 import team.anonyms.athletelink.gameservice.dto.RankDto;
 import team.anonyms.athletelink.gameservice.enums.GameOutcome;
 import team.anonyms.athletelink.gameservice.services.PlayerProfileService;
@@ -98,17 +98,29 @@ class PlayerProfileControllerTest {
     @Test
     void matchesUsePageAndCountPerPagePathVariables() throws Exception {
         UUID userId = UUID.randomUUID();
+        UUID requestId = UUID.randomUUID();
         when(roundResultService.getPlayerMatches(userId, 7L, 3, 5))
-                .thenReturn(new PageDto<>(List.of(), 3, 5));
+                .thenReturn(List.of(new PlayerRoundHistoryDto(
+                        UUID.randomUUID(), requestId, 2, 7L, GameOutcome.WIN, 25,
+                        Instant.parse("2026-10-20T10:00:00Z"))));
 
         mvc.perform(get("/players/{userId}/matches/{page}/{cntPerPage}", userId, 3, 5)
                         .param("sportId", "7"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items").isEmpty())
-                .andExpect(jsonPath("$.page").value(3))
-                .andExpect(jsonPath("$.cntPerPage").value(5))
-                .andExpect(jsonPath("$.hasNext").doesNotExist())
-                .andExpect(jsonPath("$.nextCursor").doesNotExist());
+                .andExpect(jsonPath("$[0].activityRequestId").value(requestId.toString()))
+                .andExpect(jsonPath("$[0].roundNumber").value(2))
+                .andExpect(jsonPath("$[0].outcome").value("WIN"));
+    }
+
+    @Test
+    void emptyMatchesPageReturnsEmptyArray() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(roundResultService.getPlayerMatches(userId, null, 3, 5))
+                .thenReturn(List.of());
+
+        mvc.perform(get("/players/{userId}/matches/{page}/{cntPerPage}", userId, 3, 5))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
     }
 
     @Test

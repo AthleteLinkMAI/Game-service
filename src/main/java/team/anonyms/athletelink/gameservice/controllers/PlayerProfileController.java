@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import team.anonyms.athletelink.gameservice.dto.BestSportDto;
-import team.anonyms.athletelink.gameservice.dto.PageDto;
 import team.anonyms.athletelink.gameservice.dto.LastGameDto;
 import team.anonyms.athletelink.gameservice.dto.OtherSportDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
@@ -140,7 +139,7 @@ public class PlayerProfileController {
             @ApiResponse(responseCode = "400", description = "Invalid sport ID, page or count per page"),
             @ApiResponse(responseCode = "404", description = "Player profile not found")
     })
-    public ResponseEntity<PageDto<PlayerRoundHistoryDto>> getMatches(
+    public ResponseEntity<List<PlayerRoundHistoryDto>> getMatches(
             @PathVariable("userId") UUID userId,
             @RequestParam(name = "sportId", required = false) Long sportId,
             @PathVariable("page") int page,

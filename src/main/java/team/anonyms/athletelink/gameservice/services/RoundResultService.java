@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import team.anonyms.athletelink.gameservice.dto.CloseRequestDto;
-import team.anonyms.athletelink.gameservice.dto.PageDto;
 import team.anonyms.athletelink.gameservice.dto.LastGameDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerHistoryRow;
 import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
@@ -181,7 +180,7 @@ public class RoundResultService {
     }
 
     @Transactional(readOnly = true)
-    public PageDto<PlayerRoundHistoryDto> getPlayerMatches(
+    public List<PlayerRoundHistoryDto> getPlayerMatches(
             UUID userId, Long sportId, int page, int cntPerPage) {
         return getPlayerHistory(playerProfileService.getProfileId(userId), sportId, page, cntPerPage);
     }
@@ -209,7 +208,7 @@ public class RoundResultService {
     }
 
     @Transactional(readOnly = true)
-    public PageDto<PlayerRoundHistoryDto> getPlayerHistory(
+    public List<PlayerRoundHistoryDto> getPlayerHistory(
             UUID profileId, Long sportId, int page, int cntPerPage) {
         if (page < 1) {
             throw new IllegalArgumentException("Page must be at least 1");
@@ -223,12 +222,11 @@ public class RoundResultService {
         long offset = (long) (page - 1) * cntPerPage;
         List<PlayerHistoryRow> rows = playerRoundResultRepository.findHistory(
                 profileId, sportId, cntPerPage, offset);
-        List<PlayerRoundHistoryDto> items = rows.stream().map(row ->
+        return rows.stream().map(row ->
                 new PlayerRoundHistoryDto(
                         row.roundResultId(), row.activityRequestId(), row.roundNumber(),
                         row.sportId(), GameOutcome.valueOf(row.outcome()),
                         row.ratingChange(), row.createdAt())).toList();
-        return new PageDto<>(items, page, cntPerPage);
     }
 
     /** Placeholder until the team approves the per-sport rating formula. */
