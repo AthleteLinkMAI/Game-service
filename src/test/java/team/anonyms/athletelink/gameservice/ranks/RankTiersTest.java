@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class RankTiersTest {
 
@@ -22,5 +23,14 @@ class RankTiersTest {
                 assertEquals((long) previous.scoreMax() + 1L, tier.scoreMin());
             }
         }
+    }
+
+    @Test
+    void nextRankHasAnExactThreshold() {
+        assertEquals(RankTiers.Name.BRONZE, RankTiers.findByScore(1000).name());
+        assertEquals(1500, RankTiers.nextRankScore(1000));
+        assertEquals(1500, RankTiers.nextRankScore(1499));
+        assertEquals(2000, RankTiers.nextRankScore(1500));
+        assertNull(RankTiers.nextRankScore(4000));
     }
 }
