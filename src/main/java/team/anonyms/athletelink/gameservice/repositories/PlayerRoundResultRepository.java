@@ -7,7 +7,6 @@ import org.springframework.data.repository.query.Param;
 import team.anonyms.athletelink.gameservice.dto.PlayerHistoryRow;
 import team.anonyms.athletelink.gameservice.entities.PlayerRoundResult;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,22 +35,13 @@ public interface PlayerRoundResultRepository extends JpaRepository<PlayerRoundRe
                   CAST(:sportId AS bigint) IS NULL
                   OR rr.sport_id = CAST(:sportId AS bigint)
               )
-              AND (
-                  CAST(:cursorCreatedAt AS timestamptz) IS NULL
-                  OR rr.created_at < CAST(:cursorCreatedAt AS timestamptz)
-                  OR (
-                      rr.created_at = CAST(:cursorCreatedAt AS timestamptz)
-                      AND rr.id < CAST(:cursorRoundResultId AS uuid)
-                  )
-              )
             ORDER BY rr.created_at DESC, rr.id DESC
-            LIMIT :limit
+            LIMIT :limit OFFSET :offset
             """, nativeQuery = true)
     List<PlayerHistoryRow> findHistory(
             @Param("profileId") UUID profileId,
             @Param("sportId") Long sportId,
-            @Param("cursorCreatedAt") Instant cursorCreatedAt,
-            @Param("cursorRoundResultId") UUID cursorRoundResultId,
-            @Param("limit") int limit
+            @Param("limit") int limit,
+            @Param("offset") long offset
     );
 }

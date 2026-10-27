@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import team.anonyms.athletelink.gameservice.dto.BestSportDto;
 import team.anonyms.athletelink.gameservice.dto.LastGameDto;
+import team.anonyms.athletelink.gameservice.dto.PageDto;
 import team.anonyms.athletelink.gameservice.dto.RankDto;
 import team.anonyms.athletelink.gameservice.enums.GameOutcome;
 import team.anonyms.athletelink.gameservice.services.PlayerProfileService;
@@ -92,5 +93,29 @@ class PlayerProfileControllerTest {
 
         mvc.perform(get("/players/{userId}/last-game", userId))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void matchesUsePageAndCountPerPagePathVariables() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(roundResultService.getPlayerMatches(userId, 7L, 3, 5))
+                .thenReturn(new PageDto<>(List.of(), 3, 5));
+
+        mvc.perform(get("/players/{userId}/matches/{page}/{cntPerPage}", userId, 3, 5)
+                        .param("sportId", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.page").value(3))
+                .andExpect(jsonPath("$.cntPerPage").value(5))
+                .andExpect(jsonPath("$.hasNext").doesNotExist())
+                .andExpect(jsonPath("$.nextCursor").doesNotExist());
+    }
+
+    @Test
+    void oldMatchesRouteIsNotAvailable() throws Exception {
+        mvc.perform(get("/players/{userId}/matches", UUID.randomUUID())
+                        .param("page", "3")
+                        .param("cntPerPage", "5"))
+                .andExpect(status().isNotFound());
     }
 }

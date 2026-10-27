@@ -70,14 +70,17 @@ class RecordProjectionIntegrationTest {
         assertEquals(new PlayerTotalsRow(4L, 3L, 1L, 2L), totals);
 
         List<LeaderboardRow> leaderboard = playerSportStatsRepository.findLeaderboard(
-                7L, null, null, 10);
+                7L, 10, 0);
         assertEquals(2, leaderboard.size());
-        assertEquals(player.getId(), leaderboard.getFirst().playerProfileId());
+        assertEquals(player.getUserId(), leaderboard.getFirst().userId());
         assertEquals(2200, leaderboard.getFirst().score());
         assertEquals(1L, leaderboard.getFirst().place());
+        List<LeaderboardRow> secondPage = playerSportStatsRepository.findLeaderboard(7L, 1, 1);
+        assertEquals(opponent.getUserId(), secondPage.getFirst().userId());
+        assertEquals(2L, secondPage.getFirst().place());
 
         List<PlayerHistoryRow> history = playerRoundResultRepository.findHistory(
-                player.getId(), null, null, null, 10);
+                player.getId(), null, 10, 0);
         assertEquals(1, history.size());
         assertEquals(requestId, history.getFirst().activityRequestId());
         assertEquals(2, history.getFirst().roundNumber());

@@ -70,7 +70,6 @@ public interface PlayerSportStatsRepository
                 WHERE pss.sport_id = :sportId
             )
             SELECT
-                player_profile_id AS "playerProfileId",
                 user_id AS "userId",
                 score AS score,
                 wins AS wins,
@@ -78,20 +77,12 @@ public interface PlayerSportStatsRepository
                 draws AS draws,
                 place AS place
             FROM ranked
-            WHERE
-                CAST(:cursorScore AS integer) IS NULL
-                OR score < CAST(:cursorScore AS integer)
-                OR (
-                    score = CAST(:cursorScore AS integer)
-                    AND player_profile_id > CAST(:cursorProfileId AS uuid)
-                )
             ORDER BY score DESC, player_profile_id ASC
-            LIMIT :limit
+            LIMIT :cntPerPage OFFSET :offset
             """, nativeQuery = true)
     List<LeaderboardRow> findLeaderboard(
             @Param("sportId") Long sportId,
-            @Param("cursorScore") Integer cursorScore,
-            @Param("cursorProfileId") UUID cursorProfileId,
-            @Param("limit") int limit
+            @Param("cntPerPage") int cntPerPage,
+            @Param("offset") long offset
     );
 }

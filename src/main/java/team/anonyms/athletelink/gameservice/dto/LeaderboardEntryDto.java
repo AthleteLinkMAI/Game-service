@@ -9,6 +9,12 @@ public record LeaderboardEntryDto(
         int wins,
         int losses,
         int draws,
-        RankDto rank
+        Rank rank
 ) {
+    public record Rank(
+            String name,
+            int scoreMin,
+            int scoreMax
+    ) {
+    }
 }

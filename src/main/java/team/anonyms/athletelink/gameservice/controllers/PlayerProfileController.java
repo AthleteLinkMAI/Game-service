@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import team.anonyms.athletelink.gameservice.dto.BestSportDto;
-import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
+import team.anonyms.athletelink.gameservice.dto.PageDto;
 import team.anonyms.athletelink.gameservice.dto.LastGameDto;
 import team.anonyms.athletelink.gameservice.dto.OtherSportDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
@@ -133,29 +133,29 @@ public class PlayerProfileController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    @GetMapping("/{userId}/matches")
-    @Operation(summary = "Get paginated player round history")
+    @GetMapping("/{userId}/matches/{page}/{cntPerPage}")
+    @Operation(summary = "Get player round history by page number")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Match history retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid cursor or limit"),
+            @ApiResponse(responseCode = "400", description = "Invalid sport ID, page or count per page"),
             @ApiResponse(responseCode = "404", description = "Player profile not found")
     })
-    public ResponseEntity<CursorPageDto<PlayerRoundHistoryDto>> getMatches(
+    public ResponseEntity<PageDto<PlayerRoundHistoryDto>> getMatches(
             @PathVariable("userId") UUID userId,
             @RequestParam(name = "sportId", required = false) Long sportId,
-            @RequestParam(name = "cursor", required = false) String cursor,
-            @RequestParam(name = "limit", defaultValue = "20") int limit
+            @PathVariable("page") int page,
+            @PathVariable("cntPerPage") int cntPerPage
     ) {
         log.atInfo()
                 .setMessage("API endpoint is called")
-                .addKeyValue("API endpoint", "GET /api/v1/players/{userId}/matches")
+                .addKeyValue("API endpoint", "GET /api/v1/players/{userId}/matches/{page}/{cntPerPage}")
                 .log();
         return ResponseEntity.ok(
                 roundResultService.getPlayerMatches(
                         userId,
                         sportId,
-                        cursor,
-                        limit
+                        page,
+                        cntPerPage
                 )
         );
     }

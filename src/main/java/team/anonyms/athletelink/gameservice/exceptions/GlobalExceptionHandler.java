@@ -54,16 +54,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("Not Found", ex.getMessage()));
     }
 
-    @ExceptionHandler(InvalidCursorException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCursor(
-            InvalidCursorException ex,
-            HttpServletRequest request
-    ) {
-        makeDefaultErrorLog(ex, request);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("Invalid Cursor", ex.getMessage()));
-    }
-
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException ex,
