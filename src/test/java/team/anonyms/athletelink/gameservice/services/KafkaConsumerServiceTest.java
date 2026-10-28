@@ -1,11 +1,11 @@
 package team.anonyms.athletelink.gameservice.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import team.anonyms.athletelink.gameservice.dto.SubmitRoundResultDto;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
 
