@@ -1,7 +1,5 @@
 package team.anonyms.athletelink.gameservice.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -9,6 +7,8 @@ import org.springframework.stereotype.Service;
 import team.anonyms.athletelink.gameservice.dto.CloseRequestDto;
 import team.anonyms.athletelink.gameservice.dto.SubmitRoundResultDto;
 import team.anonyms.athletelink.gameservice.dto.UserChange;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +52,7 @@ public class KafkaConsumerService {
     private <T> T parse(String json, Class<T> type) {
         try {
             return objectMapper.readValue(json, type);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalArgumentException("Invalid Kafka event payload", exception);
         }
     }
