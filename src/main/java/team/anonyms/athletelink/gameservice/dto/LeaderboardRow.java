@@ -4,7 +4,6 @@ import java.util.UUID;
 
 
 public record LeaderboardRow(
-        UUID playerProfileId,
         UUID userId,
         Integer score,
         Integer wins,

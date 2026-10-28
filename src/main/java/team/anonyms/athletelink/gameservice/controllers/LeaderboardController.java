@@ -10,11 +10,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
 import team.anonyms.athletelink.gameservice.dto.LeaderboardEntryDto;
 import team.anonyms.athletelink.gameservice.services.LeaderboardService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/leaderboards")
@@ -31,26 +31,26 @@ public class LeaderboardController {
         this.leaderboardService = leaderboardService;
     }
 
-    @GetMapping("/{sportId}")
+    @GetMapping("/{sportId}/{page}/{cntPerPage}")
     @Operation(summary = "Get sport leaderboard")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Leaderboard retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid sport ID, cursor or limit")
+            @ApiResponse(responseCode = "400", description = "Invalid sport ID, page or count per page")
     })
-    public ResponseEntity<CursorPageDto<LeaderboardEntryDto>> getLeaderboard(
+    public ResponseEntity<List<LeaderboardEntryDto>> getLeaderboard(
             @PathVariable("sportId") Long sportId,
-            @RequestParam(name = "cursor", required = false) String cursor,
-            @RequestParam(name = "limit", defaultValue = "20") int limit
+            @PathVariable("page") int page,
+            @PathVariable("cntPerPage") int cntPerPage
     ) {
         log.atInfo()
                 .setMessage("API endpoint is called")
-                .addKeyValue("API endpoint", "GET /api/v1/leaderboards/{sportId}")
+                .addKeyValue("API endpoint", "GET /api/v1/leaderboards/{sportId}/{page}/{cntPerPage}")
                 .log();
         return ResponseEntity.ok(
                 leaderboardService.getLeaderboard(
                         sportId,
-                        cursor,
-                        limit
+                        page,
+                        cntPerPage
                 )
         );
     }

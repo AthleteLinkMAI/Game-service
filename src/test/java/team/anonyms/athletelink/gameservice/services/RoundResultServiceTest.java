@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import team.anonyms.athletelink.gameservice.dto.CursorPageDto;
 import team.anonyms.athletelink.gameservice.dto.PlayerRoundHistoryDto;
 import team.anonyms.athletelink.gameservice.dto.RoundResultDetailsDto;
 import team.anonyms.athletelink.gameservice.dto.SubmitRoundResultDto;
@@ -16,7 +15,6 @@ import team.anonyms.athletelink.gameservice.entities.RoundResult;
 import team.anonyms.athletelink.gameservice.enums.GameOutcome;
 import team.anonyms.athletelink.gameservice.enums.GameResultStatus;
 import team.anonyms.athletelink.gameservice.exceptions.ResourceNotFoundException;
-import team.anonyms.athletelink.gameservice.pagination.CursorService;
 import team.anonyms.athletelink.gameservice.dto.PlayerHistoryRow;
 import team.anonyms.athletelink.gameservice.ranks.RankTiers;
 import team.anonyms.athletelink.gameservice.repositories.PlayerRoundResultRepository;
@@ -36,7 +34,6 @@ class RoundResultServiceTest {
     @Mock RoundResultRepository roundResultRepository;
     @Mock PlayerRoundResultRepository playerRoundResultRepository;
     @Mock PlayerProfileService playerProfileService;
-    @Mock CursorService cursorService;
     @Mock KafkaProducerService kafkaProducerService;
 
     private RoundResultService service;
@@ -45,7 +42,7 @@ class RoundResultServiceTest {
     void setUp() {
         service = new RoundResultService(
                 roundResultRepository, playerRoundResultRepository,
-                playerProfileService, cursorService, kafkaProducerService);
+                playerProfileService, kafkaProducerService);
     }
 
     @Test
@@ -163,26 +160,40 @@ class RoundResultServiceTest {
     }
 
     @Test
-    void historyIncludesRequestAndRoundAndFetchesLimitPlusOne() {
+    void historyIncludesRequestAndRoundAndFetchesOnlyRequestedPageSize() {
         UUID profileId = UUID.randomUUID();
         UUID requestId = UUID.randomUUID();
         PlayerHistoryRow row = new PlayerHistoryRow(
                 UUID.randomUUID(), requestId, 2, 7L, "WIN", 0,
                 Instant.parse("2026-09-30T10:00:00Z"));
-        PlayerHistoryRow extra = new PlayerHistoryRow(
-                UUID.randomUUID(), requestId, 1, 7L, "LOSS", 0,
-                Instant.parse("2026-09-29T10:00:00Z"));
-        when(playerRoundResultRepository.findHistory(profileId, 7L, null, null, 2))
-                .thenReturn(List.of(row, extra));
-        when(cursorService.encode(any())).thenReturn("next");
+        when(playerRoundResultRepository.findHistory(profileId, 7L, 1, 1L))
+                .thenReturn(List.of(row));
 
-        CursorPageDto<PlayerRoundHistoryDto> page =
-                service.getPlayerHistory(profileId, 7L, null, 1);
-        assertTrue(page.hasNext());
-        assertEquals("next", page.nextCursor());
-        assertEquals(requestId, page.items().getFirst().activityRequestId());
-        assertEquals(2, page.items().getFirst().roundNumber());
-        verify(playerRoundResultRepository).findHistory(profileId, 7L, null, null, 2);
+        List<PlayerRoundHistoryDto> page =
+                service.getPlayerHistory(profileId, 7L, 2, 1);
+        assertEquals(1, page.size());
+        assertEquals(requestId, page.getFirst().activityRequestId());
+        assertEquals(2, page.getFirst().roundNumber());
+        verify(playerRoundResultRepository).findHistory(profileId, 7L, 1, 1L);
+    }
+
+    @Test
+    void historyPagePastEndIsEmpty() {
+        UUID profileId = UUID.randomUUID();
+        when(playerRoundResultRepository.findHistory(profileId, null, 20, 20L))
+                .thenReturn(List.of());
+
+        List<PlayerRoundHistoryDto> page = service.getPlayerHistory(profileId, null, 2, 20);
+        assertTrue(page.isEmpty());
+    }
+
+    @Test
+    void historyRejectsInvalidPageAndPageSize() {
+        UUID profileId = UUID.randomUUID();
+        assertThrows(IllegalArgumentException.class, () -> service.getPlayerHistory(profileId, null, 0, 20));
+        assertThrows(IllegalArgumentException.class, () -> service.getPlayerHistory(profileId, null, 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> service.getPlayerHistory(profileId, null, 1, 101));
+        verifyNoInteractions(playerRoundResultRepository);
     }
 
     @Test
@@ -196,7 +207,7 @@ class RoundResultServiceTest {
                 roundId, requestId, 2, 7L, "DRAW", 0, recordedAt);
         PlayerProfile other = profile();
         when(playerProfileService.getProfileId(userId)).thenReturn(profileId);
-        when(playerRoundResultRepository.findHistory(profileId, null, null, null, 1))
+        when(playerRoundResultRepository.findHistory(profileId, null, 1, 0L))
                 .thenReturn(List.of(last));
         when(playerRoundResultRepository.findAllByRoundResult_Id(roundId))
                 .thenReturn(List.of(
@@ -221,7 +232,7 @@ class RoundResultServiceTest {
         UUID userId = UUID.randomUUID();
         UUID profileId = UUID.randomUUID();
         when(playerProfileService.getProfileId(userId)).thenReturn(profileId);
-        when(playerRoundResultRepository.findHistory(profileId, null, null, null, 1))
+        when(playerRoundResultRepository.findHistory(profileId, null, 1, 0L))
                 .thenReturn(List.of());
 
         assertTrue(service.getLastGame(userId).isEmpty());
