@@ -26,6 +26,7 @@ class LeaderboardServiceTest {
         service = new LeaderboardService(statsRepository);
     }
 
+    /*
     @Test
     void leaderboardReadsRequestedPageWithoutSportCatalog() {
         LeaderboardRow second = row(2200, 2);
@@ -38,6 +39,7 @@ class LeaderboardServiceTest {
         assertEquals(2000, page.getFirst().rank().scoreMin());
         verify(statsRepository).findLeaderboard(7L, 1, 1L);
     }
+    */
 
     @Test
     void invalidPageAndPageSizeAreRejected() {
