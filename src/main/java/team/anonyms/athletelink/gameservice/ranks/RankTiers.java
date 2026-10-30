@@ -33,13 +33,13 @@ public final class RankTiers {
     public static final int INITIAL_SCORE = 1000;
 
     public static final List<Tier> VALUES = List.of(
-            new Tier(Name.BRONZE, 1, 1000, 1499),
-            new Tier(Name.SILVER, 1, 1500, 1999),
-            new Tier(Name.GOLD, 1, 2000, 2499),
-            new Tier(Name.DIAMOND, 1, 2500, 2999),
-            new Tier(Name.MYTHIC, 1, 3000, 3499),
-            new Tier(Name.LEGEND, 1, 3500, 3999),
-            new Tier(Name.MASTER, 1, 4000, Integer.MAX_VALUE)
+            new Tier(Name.BRONZE, 1, 0, 499),
+            new Tier(Name.SILVER, 1, 500, 999),
+            new Tier(Name.GOLD, 1, 1000, 1499),
+            new Tier(Name.DIAMOND, 1, 1500, 1999),
+            new Tier(Name.MYTHIC, 1, 2000, 2499),
+            new Tier(Name.LEGEND, 1, 2500, 2999),
+            new Tier(Name.MASTER, 1, 3000, Integer.MAX_VALUE)
     );
 
     private RankTiers() {
